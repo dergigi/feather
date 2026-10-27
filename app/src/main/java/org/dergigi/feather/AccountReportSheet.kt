@@ -47,29 +47,34 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
                 val author = profiles[current.owner] ?: state.profiles[current.owner]
                 AccountAvatar(author?.name ?: FeatherRepository.shortKey(current.owner), 36, author?.picture)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AccountAvatar(name, 36, profile?.picture)
-                Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Icon(painterResource(R.drawable.report_flag), stringResource(R.string.ui_report_account, name),
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = .8f))
-            }
-            Box {
-                OutlinedButton(enabled = !busy, onClick = { expanded = true }) {
-                    current.reason?.let { reason ->
-                        Icon(painterResource(reason.icon), null, Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = .8f))
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text(stringResource(current.reason?.label ?: R.string.ui_report_reason))
-                    Icon(Icons.Default.ArrowDropDown, null)
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    AccountReportReason.entries.forEach { reason ->
-                        DropdownMenuItem(text = { Text(stringResource(reason.label)) },
-                            leadingIcon = { Icon(painterResource(reason.icon), null, Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = .8f)) }, onClick = {
-                            reports.edit(reason, current.text); expanded = false
-                        })
+                Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                    Box {
+                        TextButton(enabled = !busy, onClick = { expanded = true },
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error.copy(alpha = .8f))) {
+                            Icon(painterResource(current.reason?.icon ?: R.drawable.report_flag), null, Modifier.size(20.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(current.reason?.label ?: R.string.ui_report_reason),
+                                Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                color = if (busy) MaterialTheme.colorScheme.onSurface.copy(alpha = .38f)
+                                    else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.Default.ArrowDropDown, null, Modifier.size(20.dp))
+                        }
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            AccountReportReason.entries.forEach { reason ->
+                                DropdownMenuItem(text = { Text(stringResource(reason.label)) },
+                                    leadingIcon = { Icon(painterResource(reason.icon), null, Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.error.copy(alpha = .8f)) }, onClick = {
+                                        reports.edit(reason, current.text); expanded = false
+                                    })
+                            }
+                        }
                     }
                 }
             }

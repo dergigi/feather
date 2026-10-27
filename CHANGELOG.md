@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Changed
+- Compact the reporting sheet by placing the reason picker beside the reported account, replacing the standalone flag and separate reason row.
+
 ## [1.8.3] - 2026-10-26
 
 ### Fixed
