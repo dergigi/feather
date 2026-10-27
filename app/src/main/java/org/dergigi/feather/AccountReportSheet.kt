@@ -2,6 +2,8 @@ package org.dergigi.feather
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -86,8 +88,19 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
                     unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(stringResource(R.string.ui_report_public), Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f)) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .toggleable(value = current.muteAfterReporting, enabled = !busy, role = Role.Checkbox,
+                            onValueChange = reports::setMuteAfterReporting),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Checkbox(checked = current.muteAfterReporting, onCheckedChange = null, enabled = !busy,
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.error))
+                        Text(stringResource(R.string.ui_mute_after_reporting), style = MaterialTheme.typography.labelMedium)
+                    }
+                    Text(stringResource(R.string.ui_report_public),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 FilledIconButton(onClick = reports::send, enabled = !busy && current.reason != null,
                     modifier = Modifier.size(48.dp), colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)) {

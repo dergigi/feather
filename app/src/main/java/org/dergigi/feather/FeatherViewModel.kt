@@ -80,7 +80,7 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
         catch (e: CancellationException) { throw e }
         catch (e: Exception) { message.value = "Settings: ${e.message}" }
     }
-    internal val accountReports by lazy { AccountReports(application, viewModelScope, repo, { signer.value }, signerRequests) }
+    internal val accountReports by lazy { AccountReports(application, viewModelScope, repo, { signer.value }, signerRequests, ::muteAccount) }
     internal val issues by lazy { IssueReports(application, viewModelScope, { signer.value }, signerRequests) }
     internal val followBusy = MutableStateFlow<Set<String>>(emptySet())
     internal val firstFollow = MutableStateFlow<Pair<String, String>?>(null)

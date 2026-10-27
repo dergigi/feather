@@ -19,12 +19,12 @@ internal enum class AccountReportReason(val tag: String, val label: Int, val ico
     OTHER("other", R.string.ui_report_other, R.drawable.report_flag),
 }
 internal data class AccountReportDraft(val owner: String, val target: String,
-    val reason: AccountReportReason? = null, val text: String = "")
+    val reason: AccountReportReason? = null, val text: String = "", val muteAfterReporting: Boolean = true)
 
 /** Public NIP-56 account reports. Opening/editing never requests a signature. */
 internal class AccountReports(private val context: Context, private val scope: CoroutineScope,
     private val repo: FeatherRepository, private val signer: () -> NostrSignerExternal?,
-    private val requests: SignerRequests) {
+    private val requests: SignerRequests, private val muteAccount: (String) -> Unit) {
     val draft = MutableStateFlow<AccountReportDraft?>(null)
     val visible = MutableStateFlow(false)
     val busy = MutableStateFlow(false)
@@ -42,6 +42,9 @@ internal class AccountReports(private val context: Context, private val scope: C
     }
     fun edit(reason: AccountReportReason?, text: String) {
         if (!busy.value) draft.value = draft.value?.copy(reason = reason, text = text.take(1000))
+    }
+    fun setMuteAfterReporting(enabled: Boolean) {
+        if (!busy.value) draft.value = draft.value?.copy(muteAfterReporting = enabled)
     }
     fun close() { visible.value = false }
     fun accountChanged() {
@@ -97,7 +100,10 @@ internal class AccountReports(private val context: Context, private val scope: C
                     // Confirmation has already succeeded; cache bookkeeping must not report failure.
                     runCatching { store.edit().putString(key, record.put("confirmed", true).toString()).commit() }
                 }
-                if (generation == run) { visible.value = false; draft.value = null }
+                if (generation == run && signer() === identity) {
+                    visible.value = false; draft.value = null
+                    if (current.muteAfterReporting) muteAccount(current.target)
+                }
             } catch (e: TimeoutCancellationException) {
                 if (generation == run) {
                     visible.value = true

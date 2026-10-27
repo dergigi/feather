@@ -4,7 +4,10 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-10-27
+
 ### Changed
+- Add a checked-by-default “Mute after reporting” checkbox; mute the account only after the report succeeds.
 - Compact the reporting sheet by placing the reason picker beside the reported account, replacing the standalone flag and separate reason row.
 
 ## [1.8.3] - 2026-10-26
