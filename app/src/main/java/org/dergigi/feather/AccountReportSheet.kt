@@ -7,6 +7,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.animation.animateContentSize
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -33,6 +35,7 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
     val current = draft ?: return
     if (!visible || current.owner != state.publicKey) return
     var expanded by remember(current.owner, current.target) { mutableStateOf(false) }
+    var showDetails by remember(current.owner, current.target) { mutableStateOf(current.text.isNotBlank()) }
     val profiles by remember(vm, current.owner, current.target) {
         vm.repo.accountProfiles(listOf(current.owner, current.target))
     }.collectAsStateWithLifecycle(emptyMap())
@@ -41,7 +44,7 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
     ModalBottomSheet(onDismissRequest = reports::close,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         CopyableMessageHost()
-        Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState())
+        Column(Modifier.fillMaxWidth().animateContentSize().imePadding().verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = reports::close) { Icon(Icons.Default.Close, stringResource(R.string.ui_close_report)) }
@@ -54,18 +57,19 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
                 AccountAvatar(name, 36, profile?.picture)
                 Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                Box(Modifier.weight(1.4f), contentAlignment = Alignment.CenterEnd) {
                     Box {
-                        TextButton(enabled = !busy, onClick = { expanded = true },
-                            contentPadding = PaddingValues(horizontal = 8.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error.copy(alpha = .8f))) {
+                        FilledTonalButton(enabled = !busy, onClick = { expanded = true },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer)) {
                             Icon(painterResource(current.reason?.icon ?: R.drawable.report_flag), null, Modifier.size(20.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(current.reason?.label ?: R.string.ui_report_reason),
-                                Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                color = if (busy) MaterialTheme.colorScheme.onSurface.copy(alpha = .38f)
-                                    else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Modifier.weight(1f), style = MaterialTheme.typography.labelLarge,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Icon(Icons.Default.ArrowDropDown, null, Modifier.size(20.dp))
                         }
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -81,11 +85,21 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
                 }
             }
             val explanation = stringResource(R.string.ui_report_explanation)
-            TextField(value = current.text, onValueChange = { reports.edit(current.reason, it) }, enabled = !busy,
-                modifier = Modifier.fillMaxWidth().semantics { contentDescription = explanation },
-                placeholder = { Text(explanation) }, minLines = 2, maxLines = 5, shape = RoundedCornerShape(24.dp),
-                colors = TextFieldDefaults.colors(focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent))
+            if (showDetails || current.text.isNotBlank()) {
+                OutlinedTextField(value = current.text, onValueChange = { reports.edit(current.reason, it) }, enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = explanation },
+                    placeholder = { Text(explanation, style = MaterialTheme.typography.bodyMedium) },
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    minLines = 1, maxLines = 5, shape = RoundedCornerShape(16.dp))
+            } else {
+                TextButton(onClick = { showDetails = true }, enabled = !busy,
+                    contentPadding = PaddingValues(horizontal = 0.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                    Icon(Icons.Default.Add, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(explanation, style = MaterialTheme.typography.labelMedium)
+                }
+            }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(Modifier.weight(1f)) {
@@ -98,8 +112,6 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
                             colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.error))
                         Text(stringResource(R.string.ui_mute_after_reporting), style = MaterialTheme.typography.labelMedium)
                     }
-                    Text(stringResource(R.string.ui_report_public),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 FilledIconButton(onClick = reports::send, enabled = !busy && current.reason != null,
                     modifier = Modifier.size(48.dp), colors = IconButtonDefaults.filledIconButtonColors(

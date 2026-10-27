@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Changed
+- Emphasize the report reason with a filled picker, collapse optional details until requested, and remove the public-report notice.
+
 ## [1.8.4] - 2026-10-27
 
 ### Changed
