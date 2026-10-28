@@ -1960,7 +1960,9 @@ class FeatherRepository(context: Context) {
         val saved = store.signed(draft)
         val signed = saved ?: run {
             val hint = target?.let(::relayHint).orEmpty()
-            val (kind, threadTags) = target?.let { replyTags(it, hint) { id ->
+            val rootId = target?.takeIf { it.kind in listOf(1111, 1244) }?.tagValue("E")
+            val cachedRoot = rootId?.let { id -> mutex.withLock { cachedEventsLocked(listOf(id))[id] } }
+            val (kind, threadTags) = target?.let { replyTags(it, hint, cachedRoot) { id ->
                 eventRelays.read(id).firstOrNull() ?: ZAPSTORE_RELAY.takeIf { id.startsWith("32267:") }
             } } ?: ((if (draft.picturePost) 20 else 1) to emptyArray<Array<String>>())
             val participants = threadTags.filter { it.firstOrNull() == "p" }.mapNotNull { it.getOrNull(1) }.toSet()

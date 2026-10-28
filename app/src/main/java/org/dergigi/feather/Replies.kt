@@ -133,7 +133,7 @@ internal class ReplyStore(context: Context) {
 }
 
 /** Preserve thread scope; ordinary notes remain interoperable NIP-10 replies. */
-internal fun replyTags(target: Event, relay: String, rootRelay: (String) -> String? = { null }): Pair<Int, Array<Array<String>>> {
+internal fun replyTags(target: Event, relay: String, cachedRoot: Event? = null, rootRelay: (String) -> String? = { null }): Pair<Int, Array<Array<String>>> {
     val hex = Regex("[0-9a-f]{64}")
     val tags = mutableListOf<Array<String>>()
     if (target.kind == 1) {
@@ -149,19 +149,36 @@ internal fun replyTags(target: Event, relay: String, rootRelay: (String) -> Stri
             .distinct().take(64).forEach { tags += arrayOf("p", it) }
         return 1 to tags.toTypedArray()
     }
-    if (target.kind in listOf(1111, 1244)) {
-        val root = target.tags.firstOrNull { it.size >= 2 && it[0] in listOf("E", "A", "I") }
-            ?: error("The parent comment has no root scope")
-        val kind = target.tagValue("K") ?: error("The parent comment has no root kind")
-        tags += if (root[0] in listOf("E", "A") && root.getOrNull(2)?.let(Protocol::relay) == null) {
-            root.toMutableList().apply {
-                while (size < 3) add("")
-                this[2] = rootRelay(root[1]).orEmpty()
-            }.toTypedArray()
-        } else root.copyOf()
-        tags += arrayOf("K", kind)
-        target.tags.firstOrNull { it.size >= 2 && it[0] == "P" }?.let { tags += it.copyOf() }
+    val root = target.takeIf { it.kind in listOf(1111, 1244) }?.tags?.firstOrNull {
+        it.size >= 2 && it[0] in listOf("E", "A", "I") && it[1].isNotBlank()
+    }
+    val addressParts = root?.takeIf { it[0] == "A" }?.get(1)?.split(':', limit = 3)
+        ?.takeIf { it.size == 3 && it[0].toIntOrNull()?.let { kind -> kind in 30000..39999 } == true && hex.matches(it[1]) }
+    val knownRoot = cachedRoot?.takeIf { root?.get(0) == "E" && it.id == root[1] }
+    val rootKind = when (root?.get(0)) {
+        "A" -> addressParts?.get(0)
+        "E" -> if (hex.matches(root[1])) knownRoot?.kind?.toString()
+            ?: target.tagValue("K")?.toIntOrNull()?.takeIf { it >= 0 }?.toString() else null
+        "I" -> target.tagValue("K")?.takeIf { it.isNotBlank() }
+            ?: externalReplyKind(root[1])
+        else -> null
+    }
+    if (root != null && rootKind != null) {
+        val inherited = root.toMutableList()
+        if (root[0] in listOf("E", "A")) {
+            while (inherited.size < 3) inherited.add("")
+            inherited[2] = (inherited[2].let(Protocol::relay) ?: rootRelay(root[1])).orEmpty()
+        }
+        tags += inherited.toTypedArray()
+        tags += arrayOf("K", rootKind)
+        val rootAuthor = knownRoot?.pubKey ?: addressParts?.get(1)
+            ?: root.takeIf { it[0] == "E" }?.getOrNull(3)?.takeIf(hex::matches)
+            ?: target.tagValue("P")?.takeIf(hex::matches)
+        rootAuthor?.let { tags += arrayOf("P", it, inherited.getOrNull(2).orEmpty()) }
     } else {
+        // An incomplete legacy comment must not prevent a reply, including offline.
+        // If its original scope cannot be recovered, scope to the actual parent
+        // instead of inventing a kind for an unknown root event.
         val address = target.tagValue("d")?.takeIf { target.kind in 30000..39999 }?.let { "${target.kind}:${target.pubKey}:$it" }
         tags += if (address != null) arrayOf("A", address, relay) else arrayOf("E", target.id, relay, target.pubKey)
         tags += arrayOf("K", target.kind.toString())
@@ -172,6 +189,14 @@ internal fun replyTags(target: Event, relay: String, rootRelay: (String) -> Stri
     tags += arrayOf("k", target.kind.toString())
     tags += arrayOf("p", target.pubKey, relay)
     return 1111 to tags.toTypedArray()
+}
+
+/** NIP-73 external scopes can identify their kind even when a comment omitted K. */
+private fun externalReplyKind(scope: String): String? = when {
+    scope.startsWith("https://") || scope.startsWith("http://") -> "web"
+    scope.startsWith("#") && scope.length > 1 -> "#"
+    else -> listOf("podcast:item:guid", "podcast:publisher:guid", "podcast:guid",
+        "isbn", "geo", "iso3166", "isan", "doi").firstOrNull { scope.startsWith("$it:") }
 }
 
 internal val profileMentionPattern = Regex("(?:nostr:)?(?:npub|nprofile)1[023456789acdefghjklmnpqrstuvwxyz]+", RegexOption.IGNORE_CASE)

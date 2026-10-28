@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Fixed
+- Allow replies to comments with missing root metadata: recover the root kind from its address, cached event, or external identifier; fall back to a direct comment on the parent when its original scope is unavailable.
+
 ## [1.8.5] - 2026-10-27
 
 ### Changed
