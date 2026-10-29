@@ -49,7 +49,7 @@ internal class Translations(private val context: Context, private val scope: Cor
         if (selection == null && result(note) != null) { toggle(note); return }
         val source = selection ?: note.content
         if (source.length > 20_000) {
-            AppMessages.show(context.getString(R.string.ui_translate_shorter))
+            AppMessages.notify(context, context.getString(R.string.ui_translate_shorter))
             return
         }
         val input = source.trim()

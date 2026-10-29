@@ -184,13 +184,14 @@ private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<St
                     for (url in images) { ensureActive(); try { ImageStore.save(context, url); saved++ } catch (e: CancellationException) { throw e } catch (_: Exception) { } }
                     saved
                 }
-                toast(if (count == 0) "Couldn't save images. Check your connection and try again." else "Saved $count of ${images.size} images to Pictures${if (Build.VERSION.SDK_INT >= 29) "/Feather" else ""}.")
+                if (count == 0) toast("Couldn't save images. Check your connection and try again.")
+                else AppMessages.notify(context, "Saved $count of ${images.size} images to Pictures${if (Build.VERSION.SDK_INT >= 29) "/Feather" else ""}.")
             } finally { busy = false }
         }
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val images = pendingSave; pendingSave = null
-        if (granted && images != null) save(images) else toast("Storage permission is needed to save images on this Android version.")
+        if (granted && images != null) save(images) else AppMessages.notify(context, "Storage permission is needed to save images on this Android version.")
     }
     fun download(images: List<String>) {
         if (Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) save(images)

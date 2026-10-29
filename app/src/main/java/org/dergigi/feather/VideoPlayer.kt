@@ -273,14 +273,14 @@ private fun VideoActions(playback: VisibleVideoPlayer, modifier: Modifier, visib
                     if (share) VideoStore.share(context, url) else { VideoStore.save(context, url); null }
                 }
                 if (intent != null) context.startActivity(Intent.createChooser(intent, "Share video"))
-                else toast("Saved video to Movies.")
+                else AppMessages.notify(context, "Saved video to Movies.")
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { toast(e.message ?: "Couldn't download video. Please try again.") }
             finally { busy = false }
         }
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) export(false) else toast("Storage permission is needed to save videos on this Android version.")
+        if (granted) export(false) else AppMessages.notify(context, "Storage permission is needed to save videos on this Android version.")
     }
     if (visible) Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)

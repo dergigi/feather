@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.8.6] - 2026-10-29
+
+### Changed
+- Use regular Android toasts for saved images/videos and simple permission, selection-length, invalid-input, and missing-app prompts. Keep copyable diagnostic errors and actionable messages.
+
 ### Fixed
 - Allow replies to comments with missing root metadata: recover the root kind from its address, cached event, or external identifier; fall back to a direct comment on the parent when its original scope is unavailable.
 

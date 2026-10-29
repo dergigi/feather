@@ -82,7 +82,7 @@ internal fun HomeFeedPages(vm: FeatherViewModel, navigation: ReaderNavigation, h
     }
     val requestLogin: () -> Unit = {
         try { loginLauncher.launch(ExternalSignerLogin.createIntent(emptyList())) }
-        catch (_: Exception) { AppMessages.show("Install an Android signer such as Amber first.") }
+        catch (_: Exception) { AppMessages.notify(context, "Install an Android signer such as Amber first.") }
     }
     var tabs by remember(home.key) {
         // Seed the two media neighbors before cache/relay discovery completes. A bounded

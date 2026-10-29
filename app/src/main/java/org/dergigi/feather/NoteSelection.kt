@@ -18,6 +18,7 @@ private data object ReplySelectionAction
 /** Keep Android's selection actions, with reply and offline translation scoped to this event. */
 @Composable
 internal fun NoteSelection(note: Event, content: @Composable () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     key(note.id) {
         val selection = rememberSelectionState()
         val reply = LocalSelectionReply.current
@@ -31,7 +32,7 @@ internal fun NoteSelection(note: Event, content: @Composable () -> Unit) {
                 if (translations != null && translations.pending == null) item(TranslateSelectionAction, translateLabel, R.drawable.translate) {
                     val parts = selection.selectedTexts
                     if (parts.sumOf { it.length.toLong() } + (parts.size - 1).coerceAtLeast(0) > 20_000) {
-                        AppMessages.show(shorterTranslation)
+                        AppMessages.notify(context, shorterTranslation)
                     } else {
                         val text = parts.joinToString("\n") { it.text }
                         close()
@@ -44,7 +45,7 @@ internal fun NoteSelection(note: Event, content: @Composable () -> Unit) {
                     val parts = selection.selectedTexts
                     val length = parts.sumOf { it.length.toLong() } + (parts.size - 1).coerceAtLeast(0)
                     if (length > 8000) {
-                        AppMessages.show(shorterQuote)
+                        AppMessages.notify(context, shorterQuote)
                         return@item
                     }
                     val text = parts.joinToString("\n") { it.text }

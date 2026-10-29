@@ -121,7 +121,7 @@ internal fun ProfileSearchPage(vm: FeatherViewModel, navigation: ReaderNavigatio
         scope.launch {
             try {
                 val reference = withContext(Dispatchers.Default) { NostrContent.searchReference(query) }
-                if (reference == null) { AppMessages.show(invalidReference); return@launch }
+                if (reference == null) { AppMessages.notify(context, invalidReference); return@launch }
                 val latest = vm.state.value
                 if (!reference.profile && ContentFilter(latest.mutedAuthors, latest.embedded, latest.deletedReactions, latest.showSensitive, latest.deletedNotes, latest.mutedWords).hides(reference)) return@launch
                 if (reference.external != null) {

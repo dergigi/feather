@@ -49,7 +49,7 @@ internal fun Context.openWebLink(url: String) {
         if (launch("org.schabi.newpipe") || launch("com.google.android.youtube")) return
         if (Build.VERSION.SDK_INT >= 30 && launch(nonBrowser = true)) return
     }
-    if (!launch()) AppMessages.show("No app can open this link.")
+    if (!launch()) AppMessages.notify(this, "No app can open this link.")
 }
 
 /** Normalize public profile websites off-main when reading metadata. */

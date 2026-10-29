@@ -31,6 +31,18 @@ internal object AppMessages {
     val topHost = MutableStateFlow<Any?>(null)
     private val hosts = mutableListOf<Any>()
     private var sequence = 0L
+    private val toastHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var toast: android.widget.Toast? = null
+
+    fun notify(context: Context, text: String) {
+        if (text.isBlank()) return
+        val app = context.applicationContext
+        toastHandler.post {
+            toast?.cancel()
+            toast = android.widget.Toast.makeText(app, text, android.widget.Toast.LENGTH_SHORT).also { it.show() }
+        }
+    }
+
 
     @Synchronized fun show(text: String, details: String = text) {
         if (text.isBlank() || (current.value?.text == text && current.value?.details == details)) return

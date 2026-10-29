@@ -44,7 +44,7 @@ internal suspend fun Context.openInNostrApp(pointer: String) {
             }
         }
         withContext(Dispatchers.Main.immediate) {
-            if (chooser == null) AppMessages.show("No other compatible Nostr app installed.")
+            if (chooser == null) AppMessages.notify(this, "No other compatible Nostr app installed.")
             else startActivity(chooser)
         }
     } catch (error: ActivityNotFoundException) {
