@@ -67,7 +67,8 @@ internal fun HomeFeedPages(vm: FeatherViewModel, navigation: ReaderNavigation, h
     val welcoming = welcomeAllowed && firstUse?.welcome != true
     val walletConnected by vm.wallet.store.connected.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val mediaStore = (LocalContext.current.applicationContext as FeatherApplication).media
+    val context = LocalContext.current
+    val mediaStore = (context.applicationContext as FeatherApplication).media
     val resources by mediaStore.resources.collectAsStateWithLifecycle()
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val loginLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { response ->
