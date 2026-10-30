@@ -98,7 +98,7 @@ internal fun NoteZap(note: Event, counts: Engagement, publicKey: String?,
                                     }) { Icon(Icons.Default.Add, stringResource(R.string.ui_custom_zap_amount)) }
                                     slot == actionStart + 1 -> IconButton(onClick = {
                                         picker = false; input = DEFAULT_ZAP_SATS.toString(); message = ""; custom = true
-                                    }) { Icon(painterResource(R.drawable.conversation), stringResource(R.string.ui_add_zap_message)) }
+                                    }) { Icon(painterResource(R.drawable.zap_comment), stringResource(R.string.ui_add_zap_message)) }
                                 }
                             }
                         }
