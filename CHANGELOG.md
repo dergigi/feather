@@ -4,6 +4,8 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-10-30
+
 ### Changed
 - Add a small lightning bolt inside the zap comment icon.
 
