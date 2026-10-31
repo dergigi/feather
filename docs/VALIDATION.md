@@ -2081,3 +2081,10 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `3a40add58305ed10f11a0103cbe9122dd84ee918bd0a1668fd8d5178a582c574`; 16,436,441 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP mirrors verified at the release tag.
 - Zapstore release `5faff0719c4a87bb98d074a55c1f0426b7990d5dfeaf9a1d916d2e764d6d5ed3` references asset `18f1c8d88597e1d91297c6d3a065073443a7f5d86854fd4630833bfc855764f6`; hash, size, certificate and versionCode match. Catalog queried through Node WebSocket after nak connection failures; complete CDN APK downloaded and SHA-256 verified after a transient download failure. No website deployment.
 - BUD-10 uses the existing media cache and player paths, HTTPS server resolution, bounded public server-list discovery, complete-response hash checks, and size checks for streamed ranges. Device behavior remains for manual testing.
+
+## 2026-10-31 — 1.9.1 release
+
+- Release source/tag `713a126c253ccfc170f45ea09ed56810cd177d61`; versionCode 232.
+- Signed release build passed in 35s. No tests or emulators run. Package/version and expected signing certificate verified; mapping archived.
+- APK SHA-256 `e519817d343dd9b44fc33b02b250b67a6ba1226b441a0f783b7c6ef7607f49bc`; 16,436,441 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
+- Zapstore release `abec13f69c394a8bdd48763af60c2876e8872d73d3be828ee1428c58ab13c3d7` references asset `26e79d55189f91e595a73e2b3a2c5c172489b68340c99312a3ddf1540350a943`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
