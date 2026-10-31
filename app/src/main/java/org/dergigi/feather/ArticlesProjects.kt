@@ -49,7 +49,10 @@ internal fun ArticleListRow(event: Event, author: String, picture: String?, onPr
                     .avatarModerationName(event.pubKey, moderationKey, onClick = onProfile),
                     maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
             }
-            NoteTimestamp(event)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!isRecipe(event)) ArticleReadingTime(event)
+                NoteTimestamp(event)
+            }
         }
         ArticlePreview(event)
     }
@@ -72,7 +75,7 @@ private object ArticleReadingTimes {
 }
 
 @Composable
-private fun ArticleReadingTime(event: Event) {
+internal fun ArticleReadingTime(event: Event) {
     val minutes by produceState<Int?>(null, event.id) { value = ArticleReadingTimes.minutes(event) }
     minutes?.let { estimate ->
         Row(Modifier.semantics(mergeDescendants = true) {
@@ -120,7 +123,6 @@ private fun ArticlePreview(event: Event) {
             else {
                 if (preview.excerpt.isNotBlank() && preview.excerpt != preview.title) Text(preview.excerpt, style = bodyStyle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                ArticleReadingTime(event)
             }
         }
     }

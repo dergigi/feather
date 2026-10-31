@@ -544,6 +544,11 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
             }
         }
     }
+    val detailNote = if (screen == "thread") {
+        (s.threadNotes.firstOrNull { it.matchesThread(threadId) }
+            ?: entry.notes[profileTab]?.firstOrNull { it.matchesThread(threadId) })
+            ?.takeUnless { contentFilter.hides(it) || it.id in s.conversation?.deleted.orEmpty() }
+    } else null
     Scaffold(
         modifier = Modifier.dismissAvatarModeration(avatarModeration),
         topBar = {
@@ -551,6 +556,21 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
             Box(Modifier.scrollAway(barFraction) { toolbarHeight = it }) {
             Column {
             TopAppBar(title = {
+                if (detailNote?.kind == 30023) {
+                    val articleTitle = remember(detailNote.id) {
+                        detailNote.tagValue("title")?.withoutObjectMarkers()?.trim().orEmpty()
+                    }
+                    if (articleTitle.isNotEmpty()) Text(articleTitle,
+                        modifier = Modifier.fillMaxWidth().clickable(onClickLabel = stringResource(R.string.ui_scroll_feed_to_top)) {
+                            scrollScope.launch {
+                                if (activeListState.firstVisibleItemIndex > 20) activeListState.scrollToItem(0)
+                                else activeListState.animateScrollToItem(0)
+                                topBarVisible = true
+                                barFraction = 1f
+                            }
+                        }.heightIn(min = 48.dp).wrapContentHeight(), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium)
+                }
                 if (screen == "profile" && profileKey != null && showProfileToolbarName) {
                     Text(s.profiles[profileKey]?.name ?: FeatherRepository.shortKey(profileKey),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -610,11 +630,6 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                         })
                 }
                 if (screen == "hashtag") HashtagFollowButton(vm, hashtag.orEmpty()) { showAccount = true }
-                val detailNote = if (screen == "thread") {
-                    (s.threadNotes.firstOrNull { it.matchesThread(threadId) }
-                        ?: entry.notes[profileTab]?.firstOrNull { it.matchesThread(threadId) })
-                        ?.takeUnless { contentFilter.hides(it) || it.id in s.conversation?.deleted.orEmpty() }
-                } else null
                 if (detailNote != null) IconButton(onClick = {
                     scrollScope.launch {
                         val pointer = context.nostrPointer(detailNote)
@@ -1306,7 +1321,10 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
                 Spacer(Modifier.width(8.dp))
             }
             TranslationControl(note)
-            NoteTimestamp(note)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (articleDetail && !isRecipe(note)) ArticleReadingTime(note)
+                NoteTimestamp(note)
+            }
         }
         Column(Modifier.padding(start = if (inset) 48.dp else 0.dp)) {
         AnimatedVisibility(showParent,

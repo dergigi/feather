@@ -4,6 +4,12 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-10-31
+
+### Changed
+- Place article reading time immediately left of its timestamp in cards and the reader.
+- Show the article title on the reader toolbar, shortened to one line with an ellipsis; tap it to return to the top.
+
 ### Added
 - Publish a visual recipe-tab interview on the Feather blog, with cropped screenshots and a dedicated tab illustration.
 
