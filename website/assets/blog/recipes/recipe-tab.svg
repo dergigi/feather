@@ -8,5 +8,5 @@
 <circle cx="600" cy="475" r="76" fill="#c2e9fa"/>
 <circle cx="600" cy="475" r="64" fill="#e8f7fe"/>
 <g transform="translate(320 470) scale(1.5833333333333333)"><path d="M12,14a3,3 0,0 0,3 -3V5a3,3 0,0 0,-6 0v6a3,3 0,0 0,3 3z M17,11a5,5 0,0 1,-10 0H5a7,7 0,0 0,6 6.92V21h2v-3.08A7,7 0,0 0,19 11z" fill="#a3b9c4" stroke="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(426 468) scale(1.75)"><path d="M4,3 L20,3 L20,21 L4,21 Z M8,16 L8,18 M12,10 L12,18 M16,6 L16,18" fill="none" stroke="#7899aa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(568 443) scale(2.6666666666666665)"><path d="M4,3V8a3,3 0,0 0,6 0V3M7,3V21M18,3C15,5 14,8 14,12H18V3ZM18,12V21" fill="none" stroke="#2184b2" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(730 468) scale(1.75)"><path d="M12 21 3.8 13C-2 7 6 0 12 7c6-7 14 0 8.2 6Z" fill="none" stroke="#7899aa" stroke-width="1.7"/></g><g transform="translate(842 470) scale(1.5833333333333333)"><path d="M10,3 L6,21 M18,3 L14,21 M4,8 L21,8 M3,16 L20,16" fill="none" stroke="#a3b9c4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
-<text x="600" y="604" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="27" fill="#25414f">Recipes in Feather</text>
+
 </svg>
