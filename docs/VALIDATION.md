@@ -2088,3 +2088,10 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Signed release build passed in 35s. No tests or emulators run. Package/version and expected signing certificate verified; mapping archived.
 - APK SHA-256 `e519817d343dd9b44fc33b02b250b67a6ba1226b441a0f783b7c6ef7607f49bc`; 16,436,441 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
 - Zapstore release `abec13f69c394a8bdd48763af60c2876e8872d73d3be828ee1428c58ab13c3d7` references asset `26e79d55189f91e595a73e2b3a2c5c172489b68340c99312a3ddf1540350a943`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
+
+## 2026-10-31 — 1.10.0 release
+
+- Release source/tag `4c57a30b309df08cd7d9d9229cc56b64bbc6caf1`; versionCode 233.
+- Signed release build passed in 1m 26s after extracting category discovery from the snapshot method to address Kotlin/JVM's method-size limit. No tests or emulators run. Package/version and expected signing certificate verified; mapping archived.
+- APK SHA-256 `13220955e00a40f09c02314cba490eb37ffb5bfc362fa5ec3ad6ef456831d356`; 16,438,401 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
+- Zapstore release `e3064a17e63e526b059659a619f8f1b864dcf9427405b3a2dc503a53bc756bb9` references asset `8624611f234fd6ae35a6b6a29f3e77e08981204df9276ad64ea0cb0740540b74`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
