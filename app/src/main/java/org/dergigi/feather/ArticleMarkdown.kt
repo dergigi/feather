@@ -42,7 +42,7 @@ internal fun ArticleMarkdown(event: Event, onReference: (NostrContent.Reference)
     val links = remember(context) { object : UriHandler {
         override fun openUri(uri: String) {
             NostrContent.decode(uri)?.let(navigate) ?: run {
-                if (android.net.Uri.parse(uri).scheme in listOf("https", "http")) context.openWebLink(uri)
+                if (android.net.Uri.parse(uri).scheme in listOf("https", "http", "blossom")) context.openWebLink(uri)
             }
         }
     } }
