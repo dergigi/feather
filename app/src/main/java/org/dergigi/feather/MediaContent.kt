@@ -11,12 +11,14 @@ object MediaContent {
     val cacheOptionsMb = listOf(128, 256, 512, 1024, 2048)
     fun imageBudget(mb: Int): Long = mb * 1024L * 1024 / 4
     fun videoBudget(mb: Int): Long = mb * 1024L * 1024 - imageBudget(mb)
-    private val urls = Regex("https://[^\\s<>]+", RegexOption.IGNORE_CASE)
+    private val urls = Regex("(?:https://|blossom:)[^\\s<>]+", RegexOption.IGNORE_CASE)
     fun secureUrl(value: String?): String? = value?.let { runCatching {
         val uri = URI(it)
         require(uri.scheme.equals("https", true) && !uri.host.isNullOrBlank() && uri.userInfo == null)
         it
     }.getOrNull() }
+
+    internal fun mediaUrl(value: String?): String? = value?.takeIf { BlossomUri.parse(it) != null } ?: secureUrl(value)
 
     fun attachments(event: Event, limit: Int = 4): List<Attachment> {
         if (event.kind in voiceKinds) return emptyList()
@@ -29,10 +31,10 @@ object MediaContent {
         }.toMap()
         val candidates = metadata.keys.asSequence() + urls.findAll(event.content).map { it.value.trimEnd('.', ',', ')', ']', '!', '?') }
         return candidates.distinct().mapNotNull { url ->
-            if (secureUrl(url) == null) return@mapNotNull null
+            if (mediaUrl(url) == null) return@mapNotNull null
             val fields = metadata[url].orEmpty()
             val mime = fields["m"]?.substringBefore(';')?.trim()?.lowercase() ?: DetectedMedia.mime(url)
-            val extension = runCatching { URI(url).path.substringAfterLast('.').lowercase() }.getOrDefault("")
+            val extension = BlossomUri.parse(url)?.extension ?: runCatching { URI(url).path.substringAfterLast('.').lowercase() }.getOrDefault("")
             val kind = when {
                 mime?.startsWith("image/") == true -> Kind.IMAGE
                 mime?.startsWith("video/") == true -> Kind.VIDEO
@@ -47,7 +49,7 @@ object MediaContent {
             }
             val dimensions = fields["dim"]?.split('x')?.mapNotNull(String::toFloatOrNull)
             val ratio = dimensions?.takeIf { it.size == 2 && it.all { dim -> dim.isFinite() && dim > 0 } }?.let { it[0] / it[1] }?.takeIf { it.isFinite() && it > 0f } ?: (16f / 9f)
-            Attachment(url, kind, ratio, secureUrl(fields["image"] ?: fields["thumb"]), fields["alt"]?.take(500), mime)
+            Attachment(url, kind, ratio, mediaUrl(fields["image"] ?: fields["thumb"]), fields["alt"]?.take(500), mime)
         }.take(if (event.kind in videoKinds) 1 else limit.coerceIn(1, 32)).toList()
     }
     fun text(event: Event, attachments: List<Attachment>): String {

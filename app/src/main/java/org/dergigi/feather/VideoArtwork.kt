@@ -39,7 +39,7 @@ internal object VideoArtwork {
     }
 
     private suspend fun image(context: Context, resources: MediaStore.Resources, url: String?): ByteArray? {
-        val safe = MediaContent.secureUrl(url) ?: return null
+        val safe = MediaContent.mediaUrl(url) ?: return null
         return try { withTimeoutOrNull(4_000) {
             val result = resources.images.execute(ImageRequest.Builder(context).data(safe)
                 .size(512, 512).maxBitmapSize(Size(512, 512)).allowHardware(false).build())

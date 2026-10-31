@@ -28,7 +28,7 @@ internal object VideoStore {
     private data class Download(val file: File, val mime: String, val name: String)
 
     private suspend fun fetch(context: Context, url: String): Download {
-        require(Uri.parse(url).scheme == "https") { "Only HTTPS videos are supported." }
+        require(MediaContent.mediaUrl(url) != null) { "Only HTTPS videos are supported." }
         val media = (context.applicationContext as FeatherApplication).media
         val resources = media.resources.value ?: throw IOException("Media cache unavailable.")
         val maxBytes = minOf(media.budgetMb.value.toLong(), 512L) * 1024 * 1024

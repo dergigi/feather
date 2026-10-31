@@ -121,7 +121,7 @@ private fun ArticlePreview(event: Event) {
                 .replace(Regex("\\s+"), " ").trim()
             ArticlePreviewModel(event.tagValue("title")?.withoutObjectMarkers()?.takeIf { it.isNotBlank() }
                 ?: event.content.lineSequence().firstOrNull { it.isNotBlank() }?.trimStart('#', ' ')?.take(160).orEmpty(),
-                excerpt, MediaContent.secureUrl(event.tagValue("image")))
+                excerpt, MediaContent.mediaUrl(event.tagValue("image")))
         }
     }
     val preview = model

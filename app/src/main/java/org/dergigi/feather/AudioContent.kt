@@ -50,7 +50,7 @@ internal data class AudioInfo(val url: String?, val mime: String?, val title: St
 
 /** Called off the display thread; never retrieve audio just to discover its duration. */
 internal fun audioInfo(event: Event): AudioInfo {
-    val url = MediaContent.secureUrl(event.content.trim())
+    val url = MediaContent.mediaUrl(event.content.trim())
     val imeta = event.tags.firstOrNull { it.firstOrNull() == "imeta" && it.contains("url $url") }
         ?.drop(1)?.mapNotNull { val split = it.indexOf(' '); if (split > 0) it.take(split) to it.substring(split + 1) else null }?.toMap().orEmpty()
     val duration = (imeta["duration"] ?: event.tagValue("duration"))?.toDoubleOrNull()
@@ -59,7 +59,7 @@ internal fun audioInfo(event: Event): AudioInfo {
         .filter { it.isFinite() && it >= 0 }.toList()
     return AudioInfo(url, imeta["m"]?.takeIf { it.startsWith("audio/") },
         event.tagValue("title")?.take(300), "",
-        MediaContent.secureUrl(event.tagValue("image")), duration, waveform)
+        MediaContent.mediaUrl(event.tagValue("image")), duration, waveform)
 }
 
 /** One application-scoped controller; the service owns the player and notification. */

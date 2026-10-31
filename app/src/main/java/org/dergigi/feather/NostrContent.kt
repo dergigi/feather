@@ -11,7 +11,7 @@ object NostrContent {
     private val hex = Regex("[0-9a-f]{64}")
     // Emoji symbols, modifiers, variation selectors, ZWJ sequences and flag tag sequences
     // belong to the hashtag too. URLs still win so fragments are never published as tags.
-    private val tokens = Regex("https?://[^\\s<>]+|(?<![\\w/])(?:nostr:)?(?:npub|nprofile|note|nevent|naddr)1[023456789acdefghjklmnpqrstuvwxyz]+|#\\[\\d{1,4}]|(?<![\\p{L}\\p{N}\\p{M}\\p{So}\\p{Sk}_/])#[\\p{L}\\p{N}\\p{So}_][\\p{L}\\p{N}\\p{M}\\p{So}\\p{Sk}_\\u200D\\x{E0020}-\\x{E007F}]*", RegexOption.IGNORE_CASE)
+    private val tokens = Regex("(?:https?://|blossom:)[^\\s<>]+|(?<![\\w/])(?:nostr:)?(?:npub|nprofile|note|nevent|naddr)1[023456789acdefghjklmnpqrstuvwxyz]+|#\\[\\d{1,4}]|(?<![\\p{L}\\p{N}\\p{M}\\p{So}\\p{Sk}_/])#[\\p{L}\\p{N}\\p{So}_][\\p{L}\\p{N}\\p{M}\\p{So}\\p{Sk}_\\u200D\\x{E0020}-\\x{E007F}]*", RegexOption.IGNORE_CASE)
     /** Match the same hashtags as the reader; consume whole URLs before considering their fragments. */
     internal fun hashtags(text: String): List<String> = tokens.findAll(text)
         .map { it.value }
@@ -58,7 +58,7 @@ object NostrContent {
 
     fun tokens(text: String, event: Event): List<Token> = tokens.findAll(text).take(64).mapNotNull { match ->
         val raw = match.value
-        if (raw.startsWith("http", true)) {
+        if (raw.startsWith("http", true) || raw.startsWith("blossom:")) {
             val url = raw.trimEnd('.', ',', ')', ']', '!', '?')
             Token(match.range.first, match.range.first + url.length, url, url = url)
         } else {

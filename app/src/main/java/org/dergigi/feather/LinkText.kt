@@ -37,7 +37,7 @@ internal fun Context.copyLink(url: String) {
 private fun LinkAnnotation.copyDestination(): String? = when (this) {
     is LinkAnnotation.Url -> url
     is LinkAnnotation.Clickable -> tag.takeIf {
-        it.startsWith("https://", true) || it.startsWith("http://", true) || it.startsWith("nostr:", true)
+        it.startsWith("https://", true) || it.startsWith("http://", true) || it.startsWith("nostr:", true) || it.startsWith("blossom:")
     }
     else -> null
 }

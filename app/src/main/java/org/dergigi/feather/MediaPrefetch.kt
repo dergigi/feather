@@ -47,8 +47,8 @@ private fun plan(input: PrefetchInput): PrefetchPlan {
     fun images(event: Event): List<PrefetchImage> {
         val note = if (event.kind in listOf(6, 16)) input.embedded[repostTarget(event)?.id] ?: return emptyList() else event
         if (note.kind in listOf(3, 30000, 30617)) return emptyList()
-        if (note.kind == 30023) return listOfNotNull(MediaContent.secureUrl(note.tagValue("image"))?.let { PrefetchImage(it, false) })
-        if (note.kind == 32267) return listOfNotNull(MediaContent.secureUrl(note.tagValue("icon"))?.let { PrefetchImage(it, false, small = true) })
+        if (note.kind == 30023) return listOfNotNull(MediaContent.mediaUrl(note.tagValue("image"))?.let { PrefetchImage(it, false) })
+        if (note.kind == 32267) return listOfNotNull(MediaContent.mediaUrl(note.tagValue("icon"))?.let { PrefetchImage(it, false, small = true) })
         return listOfNotNull(input.profiles[note.pubKey]?.picture?.let { PrefetchImage(it, true) },
             customReactionUrl(note)?.let { PrefetchImage(it, false, small = true) }) +
             MediaContent.attachments(note).mapNotNull {
@@ -67,7 +67,7 @@ private fun plan(input: PrefetchInput): PrefetchPlan {
             originals.flatMap { MediaContent.attachments(it).filter { it.kind == MediaContent.Kind.VIDEO }.map { it.url } }
         }
     }.distinct().filter { it !in input.playing }.take(3)
-    return PrefetchPlan(upcoming.flatMap(::images).filter { MediaContent.secureUrl(it.url) != null }.distinct().take(40),
+    return PrefetchPlan(upcoming.flatMap(::images).filter { MediaContent.mediaUrl(it.url) != null }.distinct().take(40),
         input.notes.filter { it.id in visibleIds }.flatMap(::images).toSet(), videoUrls, input.playing)
 }
 

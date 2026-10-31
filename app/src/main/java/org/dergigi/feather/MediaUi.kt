@@ -79,7 +79,7 @@ fun MediaHost(store: MediaStore, reading: Boolean, content: @Composable () -> Un
 fun RemoteImage(url: String?, modifier: Modifier, description: String? = null, crop: Boolean = true, avatar: Boolean = false, widthPx: Int? = null, fillWidth: Boolean = false, onImageSize: ((Int, Int) -> Unit)? = null) {
     val media = LocalMedia.current
     val context = LocalContext.current
-    val safeUrl = remember(url) { MediaContent.secureUrl(url) }
+    val safeUrl = remember(url) { MediaContent.mediaUrl(url) }
     val loader = media.resources?.images ?: return
     if (safeUrl == null) return
     val week = if (avatar) System.currentTimeMillis() / (7 * 24 * 60 * 60 * 1000L) else 0L

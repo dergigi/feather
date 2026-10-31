@@ -4,6 +4,12 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-31
+
+### Added
+- Read BUD-10 `blossom:` image, video, and audio links inline, including gallery viewing, saving, and cached playback. Resolve server hints, public author server lists, and fallback servers over HTTPS; preserve original links when sharing or copying.
+- Verify hashes on complete Blossom downloads and check advertised sizes, including total sizes on ranged video responses.
+
 ## [1.8.7] - 2026-10-30
 
 ### Changed

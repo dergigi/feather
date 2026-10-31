@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import java.util.Locale
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import com.vitorpamplona.quartz.nip19Bech32.entities.NAddress
 import com.vitorpamplona.quartz.nip19Bech32.entities.NEvent
@@ -26,6 +27,20 @@ internal fun NostrContent.Reference.copyableLink(original: String? = null): Stri
 
 /** Explicit app routing also works when Android has not verified NewPipe's web links. */
 internal fun Context.openWebLink(url: String) {
+    if (BlossomUri.parse(url) != null) {
+        val app = applicationContext as FeatherApplication
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val resolved = app.media.http.newCall(okhttp3.Request.Builder().url(BlossomUri.transport(url)).build())
+                    .execute().use { response ->
+                        if (!response.isSuccessful) throw java.io.IOException("Blossom file unavailable")
+                        response.request.url.toString()
+                    }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { openWebLink(resolved) }
+            } catch (_: Exception) { AppMessages.notify(this@openWebLink, "Could not open this Blossom file.") }
+        }
+        return
+    }
     val uri = Uri.parse(url)
     if (uri.scheme?.lowercase(Locale.ROOT) !in setOf("https", "http")) return
     fun launch(packageName: String? = null, nonBrowser: Boolean = false): Boolean = try {

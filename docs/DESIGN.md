@@ -437,3 +437,7 @@ Translate is an explicit, labeled overflow action for text notes, replies, artic
 ### Picture-first publishing
 
 On a Photos tab, the compose FAB uses a photo outline with an overlapping Feather-blue feather. It opens a separate, persistent photo draft with pictures above the caption, a plus tile for adding photos and upload progress, and only Send in the bottom action row; other tabs keep regular note composition. Publish one NIP-68 kind-20 event, with caption in content and image metadata in imeta tags. Keep the title tag empty because the composer collects only a caption; never duplicate it into a title. Image-only posts are allowed. Reuse Blossom metadata stripping, compression, signing and the bounded durable outbox. Never create a duplicate kind-1 post. Photos support the same explicit deletion action as notes.
+
+## Blossom references
+
+Read BUD-10 `blossom:` media through the normal image/audio/video paths. Preserve the original reference as the cache and sharing identity. Resolve explicit server hints before public author kind-10063 lists, then bounded public fallback servers. Discovery and retrieval stay off-main and share bounded server-list results. Retain the HTTPS-only media policy; do not enable cleartext globally. Verify complete downloads against the content hash and optional size; streaming range requests validate advertised total size when available.

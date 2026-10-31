@@ -169,7 +169,7 @@ class AudioPlaybackService : MediaSessionService() {
                 override fun onAddMediaItems(session: MediaSession, controller: MediaSession.ControllerInfo,
                     mediaItems: List<MediaItem>): ListenableFuture<List<MediaItem>> = Futures.immediateFuture(
                     if (controller.packageName == packageName) mediaItems.take(1).filter {
-                        MediaContent.secureUrl(it.localConfiguration?.uri?.toString()) != null
+                        MediaContent.mediaUrl(it.localConfiguration?.uri?.toString()) != null
                     } else emptyList())
             }).build()
         serviceScope.launch {

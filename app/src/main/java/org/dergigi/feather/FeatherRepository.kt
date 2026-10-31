@@ -1920,6 +1920,23 @@ class FeatherRepository(context: Context) {
         }
     }
 
+    /** Public BUD-03 discovery for BUD-10 reading; does not require a signed-in owner. */
+    internal suspend fun blossomReadServers(author: String): List<String> = withContext(Dispatchers.IO) {
+        ready.await()
+        val filter = Filter(authors = listOf(author), kinds = listOf(10063), limit = 1)
+        suspend fun cached() = mutex.withLock { db.query<Event>(filter).maxByOrNull { it.createdAt } }
+        var list = cached()
+        if (list == null) {
+            val relays = (relayLists[author]?.write.orEmpty() + state.value.relays).distinct().take(4)
+            profileQueries.fetch(relays, listOf(filter.toJson())) { relay, event ->
+                event.kind == 10063 && event.pubKey == author && accept(event, seenAt = relay)
+            }
+            list = cached()
+        }
+        list?.tags.orEmpty().filter { it.firstOrNull() == "server" }
+            .mapNotNull { it.getOrNull(1)?.let(::blossomServer) }.distinct().take(8)
+    }
+
     internal suspend fun blossomServers(owner: String): List<String> = withContext(Dispatchers.IO) {
         ready.await()
         val filter = Filter(authors = listOf(owner), kinds = listOf(10063), limit = 1)

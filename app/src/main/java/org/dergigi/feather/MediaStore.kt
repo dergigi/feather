@@ -4,6 +4,8 @@ package org.dergigi.feather
 
 import android.content.Context
 import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.ResolvingDataSource
+import android.net.Uri
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
@@ -35,7 +37,9 @@ class MediaStore(private val context: Context) {
     val budgetMb = _budgetMb.asStateFlow()
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+    private val blossomTransport = BlossomTransport(context)
     val http = OkHttpClient.Builder()
+        .addInterceptor(blossomTransport)
         .dispatcher(Dispatcher().apply { maxRequests = 4; maxRequestsPerHost = 2 })
         .connectTimeout(10, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS)
         .followSslRedirects(false).build()
@@ -86,20 +90,20 @@ class MediaStore(private val context: Context) {
                 val images = ImageLoader.Builder(context)
                     .memoryCache(memory)
                     .diskCache(disk)
-                    .components { add(thumbnails); add(OkHttpNetworkFetcherFactory(callFactory = { http })) }
+                    .components { add(BlossomImageInterceptor()); add(thumbnails); add(OkHttpNetworkFetcherFactory(callFactory = { http })) }
                     .build()
                 val prefetchImages = ImageLoader.Builder(context)
                     .memoryCache(memory).diskCache(disk)
-                    .components { add(thumbnails); add(OkHttpNetworkFetcherFactory(callFactory = { prefetchHttp })) }
+                    .components { add(BlossomImageInterceptor()); add(thumbnails); add(OkHttpNetworkFetcherFactory(callFactory = { prefetchHttp })) }
                     .build()
                 videos = SimpleCache(File(context.cacheDir, "videos"), LeastRecentlyUsedCacheEvictor(MediaContent.videoBudget(mb)), StandaloneDatabaseProvider(context))
                 // Initializes and trims the cache on IO before any player is created.
                 videos.checkInitialization()
                 val source = CacheDataSource.Factory().setCache(videos)
-                    .setUpstreamDataSourceFactory(OkHttpDataSource.Factory(http))
+                    .setUpstreamDataSourceFactory(blossomSource(http))
                     .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
                 val prefetchSource = CacheDataSource.Factory().setCache(videos)
-                    .setUpstreamDataSourceFactory(OkHttpDataSource.Factory(videoPrefetchHttp))
+                    .setUpstreamDataSourceFactory(blossomSource(videoPrefetchHttp))
                     .setFlags(CacheDataSource.FLAG_BLOCK_ON_CACHE)
                 _budgetMb.value = mb
                 prefs.edit().putInt("cacheMb", mb).apply()
@@ -109,6 +113,9 @@ class MediaStore(private val context: Context) {
                 _error.value = "Could not open the media cache. Try another storage size."
             }
         }
+    }
+    private fun blossomSource(client: OkHttpClient) = ResolvingDataSource.Factory(OkHttpDataSource.Factory(client)) { spec ->
+        spec.withUri(Uri.parse(BlossomUri.transport(spec.uri.toString())))
     }
     fun background() { if (!audioActive && !VideoPlaybackService.active) http.dispatcher.cancelAll(); prefetchHttp.dispatcher.cancelAll(); videoPrefetchHttp.dispatcher.cancelAll() }
 }

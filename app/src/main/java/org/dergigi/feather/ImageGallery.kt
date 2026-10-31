@@ -312,7 +312,7 @@ private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<St
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.ui_open_image_in_browser)) },
                             leadingIcon = { Icon(painterResource(R.drawable.open_external), null) },
-                            onClick = { menu = false; runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urls[pager.currentPage]))) } },
+                            onClick = { menu = false; context.openWebLink(urls[pager.currentPage]) },
                         )
                     }
                 }

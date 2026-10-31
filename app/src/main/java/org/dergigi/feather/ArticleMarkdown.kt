@@ -61,7 +61,7 @@ internal fun ArticleMarkdown(event: Event, onReference: (NostrContent.Reference)
     val gallery by rememberUpdatedState(LocalOpenGallery.current)
     val transformer = remember(event.id) { ArticleImageTransformer { url -> gallery(listOf(url), 0, event) } }
     val title = remember(event.id, articleLayout) { if (articleLayout) event.tagValue("title")?.withoutObjectMarkers()?.takeIf(String::isNotBlank) else null }
-    val cover = remember(event.id, articleLayout) { if (articleLayout) MediaContent.secureUrl(event.tagValue("image")) else null }
+    val cover = remember(event.id, articleLayout) { if (articleLayout) MediaContent.mediaUrl(event.tagValue("image")) else null }
     val colors = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -103,7 +103,7 @@ internal fun ArticleMarkdown(event: Event, onReference: (NostrContent.Reference)
 private class ArticleImageTransformer(private val open: (String) -> Unit) : ImageTransformer {
     @Composable
     override fun transform(link: String): ImageData? {
-        val url = remember(link) { MediaContent.secureUrl(link) } ?: return null
+        val url = remember(link) { MediaContent.mediaUrl(link) } ?: return null
         val media = LocalMedia.current
         val loader = media.resources?.images ?: return null
         val context = LocalContext.current

@@ -20,7 +20,7 @@ internal object ImageStore {
     private data class Download(val file: File, val mime: String, val name: String)
 
     private fun fetch(context: Context, url: String): Download {
-        require(Uri.parse(url).scheme == "https") { "Only HTTPS images are supported." }
+        require(MediaContent.mediaUrl(url) != null) { "Only HTTPS images are supported." }
         val folder = File(context.cacheDir, "shared-images").apply { mkdirs() }
         // Give receiving apps a day to read shared files; don't delete a fresh share.
         folder.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86_400_000 }?.forEach { it.delete() }
@@ -42,11 +42,11 @@ internal object ImageStore {
                 }
             }
         }
-        return media.http.newCall(Request.Builder().url(url).build()).execute().use { response ->
+        return media.http.newCall(Request.Builder().url(BlossomUri.transport(url)).build()).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Image download failed (${response.code}).")
             val body = response.body ?: throw IOException("Empty image response.")
             if (body.contentLength() > maxBytes) throw IOException("Image exceeds 50 MB.")
-            val extension = Uri.parse(url).lastPathSegment.orEmpty().substringAfterLast('.', "").lowercase()
+            val extension = BlossomUri.parse(url)?.extension ?: Uri.parse(url).lastPathSegment.orEmpty().substringAfterLast('.', "").lowercase()
             val fallback = when(extension) { "png" -> "image/png"; "jpg", "jpeg" -> "image/jpeg"; "gif" -> "image/gif"; "webp" -> "image/webp"; "avif" -> "image/avif"; else -> null }
             val header = response.header("Content-Type").orEmpty().substringBefore(';').trim().lowercase()
             val mime = if (header.startsWith("image/")) header else if (header.isEmpty() || header == "application/octet-stream") fallback else null
