@@ -3,6 +3,9 @@ package org.dergigi.feather
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -40,7 +43,24 @@ internal fun ArticleContent(event: Event, compact: Boolean, onReference: (NostrC
 
 @Composable
 internal fun ArticleListRow(event: Event, author: String, picture: String?, onProfile: () -> Unit, onOpen: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClickLabel = if (isRecipe(event)) "Read recipe" else "Read article", onClick = onOpen)
+    if (isRecipe(event)) {
+        val moderationKey = remember(event.id) { Any() }
+        Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Read recipe", onClick = onOpen)
+            .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    ModerationAvatar(event.pubKey, author, picture, expansionKey = moderationKey, note = event, onClick = onProfile)
+                    Text(author, Modifier.weight(1f).padding(end = 8.dp)
+                        .avatarModerationName(event.pubKey, moderationKey, onClick = onProfile),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
+                }
+                NoteTimestamp(event)
+            }
+            ArticlePreview(event)
+        }
+        return
+    }
+    Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Read article", onClick = onOpen)
         .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         ArticlePreview(event)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
@@ -52,7 +72,7 @@ internal fun ArticleListRow(event: Event, author: String, picture: String?, onPr
                 Text(author, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (!isRecipe(event)) ArticleReadingTime(event)
+            ArticleReadingTime(event)
             ArticleDate(event)
         }
     }
@@ -129,10 +149,17 @@ private fun ArticlePreview(event: Event) {
         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
     } else if (isRecipe(event)) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            preview.cover?.let { cover ->
-                RemoteImage(cover, Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(RoundedCornerShape(12.dp)), preview.title)
-            }
-            Text(preview.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium,
+            if (preview.cover != null) {
+                Box(Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    RemoteImage(preview.cover, Modifier.matchParentSize(), preview.title)
+                    Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+                        0f to Color.Transparent, 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.85f))))
+                    Text(preview.title, Modifier.align(Alignment.BottomStart).padding(16.dp),
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, color = Color.White,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis)
+                }
+            } else Text(preview.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium,
                 maxLines = 3, overflow = TextOverflow.Ellipsis)
             RecipeDetails(event)
         }

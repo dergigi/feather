@@ -4,6 +4,10 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Changed
+- Place Recipes immediately after Polls and before Reactions.
+- Align recipe cards with regular posts: author and avatar at the top left, the standard timestamp at the top right, and the title over a shaded gradient on the photo.
+
 ## [1.10.0] - 2026-10-31
 
 ### Added

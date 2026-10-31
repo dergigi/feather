@@ -34,15 +34,15 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
             PODCASTS -> 8
             VOICE -> 9
             POLLS -> 10
-            REACTIONS -> 11
-            HASHTAGS -> 12
-            BOOKMARKS -> 13
-            PEOPLE -> 14
-            APPS -> 15
-            PROJECTS -> 16
-            ISSUES -> 17
-            EMOJI_PACKS -> 18
-            RECIPES -> 19
+            RECIPES -> 11
+            REACTIONS -> 12
+            HASHTAGS -> 13
+            BOOKMARKS -> 14
+            PEOPLE -> 15
+            APPS -> 16
+            PROJECTS -> 17
+            ISSUES -> 18
+            EMOJI_PACKS -> 19
         }
 
     internal val profileOrderPriority: Int
