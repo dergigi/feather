@@ -4,6 +4,8 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.4] - 2026-10-31
+
 ### Changed
 - Use compact article previews everywhere, including embedded article links in notes; keep large recipe cards and full reader covers.
 
