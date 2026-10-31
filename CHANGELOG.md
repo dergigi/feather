@@ -4,7 +4,10 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-10-31
+
 ### Changed
+- Give articles and recipes shared photo-led cards and a larger responsive reader cover, with titles over a bottom gradient, familiar author/timestamp placement, and room for long titles.
 - Place Recipes immediately after Polls and before Reactions.
 - Align recipe cards with regular posts: author and avatar at the top left, the standard timestamp at the top right, and the title over a shaded gradient on the photo.
 

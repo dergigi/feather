@@ -1,6 +1,5 @@
 package org.dergigi.feather
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,8 +7,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
@@ -66,14 +63,9 @@ internal fun ArticleMarkdown(event: Event, onReference: (NostrContent.Reference)
     val typography = MaterialTheme.typography
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if (cover != null) {
-            Box(Modifier.fillMaxWidth().heightIn(min = 280.dp)
-                .background(colors.surfaceContainerHigh)
-                .clickable(onClickLabel = "Open article cover") { gallery(listOf(cover), 0, event) }) {
-                RemoteImage(cover, Modifier.matchParentSize(), title, crop = true)
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))))
-                if (title != null) Text(title, Modifier.align(Alignment.BottomStart).padding(24.dp),
-                    style = typography.headlineLarge, color = Color.White)
-            }
+            ArticleCover(cover, title, Modifier.clickable(onClickLabel = "Open article cover") {
+                gallery(listOf(cover), 0, event)
+            }, reader = true)
         } else if (title != null) Text(title, Modifier.padding(horizontal = 24.dp), style = typography.headlineLarge)
         if (articleLayout && isRecipe(event)) RecipeDetails(event, Modifier.padding(horizontal = 24.dp))
         if (body == null) CircularProgressIndicator(Modifier.padding(horizontal = 24.dp).size(24.dp), strokeWidth = 2.dp)

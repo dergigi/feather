@@ -25,10 +25,6 @@ import com.vitorpamplona.quartz.nip01Core.core.Event
 import com.vitorpamplona.quartz.nip19Bech32.entities.NAddress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 private val markdownImage = Regex("!\\[([^]\\n]*)]\\((https?://[^\\s)]+)(?:\\s+\"[^\"]*\")?\\)")
 
@@ -43,38 +39,19 @@ internal fun ArticleContent(event: Event, compact: Boolean, onReference: (NostrC
 
 @Composable
 internal fun ArticleListRow(event: Event, author: String, picture: String?, onProfile: () -> Unit, onOpen: () -> Unit) {
-    if (isRecipe(event)) {
-        val moderationKey = remember(event.id) { Any() }
-        Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Read recipe", onClick = onOpen)
-            .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                    ModerationAvatar(event.pubKey, author, picture, expansionKey = moderationKey, note = event, onClick = onProfile)
-                    Text(author, Modifier.weight(1f).padding(end = 8.dp)
-                        .avatarModerationName(event.pubKey, moderationKey, onClick = onProfile),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
-                }
-                NoteTimestamp(event)
+    val moderationKey = remember(event.id) { Any() }
+    Column(Modifier.fillMaxWidth().clickable(onClickLabel = if (isRecipe(event)) "Read recipe" else "Read article", onClick = onOpen)
+        .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                ModerationAvatar(event.pubKey, author, picture, expansionKey = moderationKey, note = event, onClick = onProfile)
+                Text(author, Modifier.weight(1f).padding(end = 8.dp)
+                    .avatarModerationName(event.pubKey, moderationKey, onClick = onProfile),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
             }
-            ArticlePreview(event)
+            NoteTimestamp(event)
         }
-        return
-    }
-    Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Read article", onClick = onOpen)
-        .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         ArticlePreview(event)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.weight(1f).heightIn(min = 48.dp)
-                .clickable(onClickLabel = "Open author's profile", onClick = onProfile),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Avatar(author, size = 24, picture = picture)
-                Text(author, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            ArticleReadingTime(event)
-            ArticleDate(event)
-        }
     }
 }
 
@@ -112,21 +89,6 @@ private fun ArticleReadingTime(event: Event) {
     }
 }
 
-/** Article cards use a fixed calendar date, independent of the note timestamp preference. */
-@Composable
-private fun ArticleDate(event: Event) {
-    val locale = Locale.getDefault()
-    val zone = ZoneId.systemDefault()
-    val date = remember(event.createdAt, locale, zone) {
-        DateTimeFormatter.ofPattern("MMM d", locale).withZone(zone).format(Instant.ofEpochSecond(event.createdAt))
-    }
-    Row(Modifier.semantics(mergeDescendants = true) { contentDescription = "Article date: $date" },
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Icon(painterResource(R.drawable.calendar), null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
 private data class ArticlePreviewModel(val title: String, val excerpt: String, val cover: String?)
 
 /** A bounded, non-interactive excerpt keeps the entire preview a reliable article target. */
@@ -147,31 +109,40 @@ private fun ArticlePreview(event: Event) {
     val preview = model
     if (preview == null) Box(Modifier.fillMaxWidth().height(88.dp), contentAlignment = Alignment.CenterStart) {
         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-    } else if (isRecipe(event)) {
+    } else {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (preview.cover != null) {
-                Box(Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                    RemoteImage(preview.cover, Modifier.matchParentSize(), preview.title)
-                    Box(Modifier.matchParentSize().background(Brush.verticalGradient(
-                        0f to Color.Transparent, 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.85f))))
-                    Text(preview.title, Modifier.align(Alignment.BottomStart).padding(16.dp),
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, color = Color.White,
-                        maxLines = 3, overflow = TextOverflow.Ellipsis)
-                }
+                ArticleCover(preview.cover, preview.title,
+                    Modifier.clip(RoundedCornerShape(12.dp)))
             } else Text(preview.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium,
                 maxLines = 3, overflow = TextOverflow.Ellipsis)
-            RecipeDetails(event)
+            if (isRecipe(event)) RecipeDetails(event)
+            else {
+                if (preview.excerpt.isNotBlank() && preview.excerpt != preview.title) Text(preview.excerpt, style = bodyStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                ArticleReadingTime(event)
+            }
         }
-    } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(preview.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium,
-                maxLines = 3, overflow = TextOverflow.Ellipsis)
-            if (preview.excerpt.isNotBlank()) Text(preview.excerpt, style = bodyStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
-        preview.cover?.let { cover ->
-            RemoteImage(cover, Modifier.size(88.dp).clip(RoundedCornerShape(12.dp)), "Article cover")
+    }
+}
+
+/** One image/title treatment for cards and the reader; large text can grow its container. */
+@Composable
+internal fun ArticleCover(cover: String, title: String?, modifier: Modifier = Modifier, reader: Boolean = false) {
+    BoxWithConstraints(modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+        val minimumHeight = if (reader) (maxWidth * 0.9f).coerceIn(280.dp, 440.dp)
+            else (maxWidth * 0.625f).coerceIn(180.dp, 320.dp)
+        Box(Modifier.fillMaxWidth().heightIn(min = minimumHeight)) {
+            RemoteImage(cover, Modifier.matchParentSize(), title, crop = true)
+            if (!title.isNullOrBlank()) {
+                Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+                    0f to Color.Transparent, 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.9f))))
+                Text(title, Modifier.align(Alignment.BottomStart).padding(top = 64.dp)
+                    .padding(if (reader) 24.dp else 16.dp),
+                    style = if (reader) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium, color = Color.White,
+                    maxLines = if (reader) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }
