@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-10-31
+
+### Fixed
+- Resolve profile mentions and note references in notification previews before shortening them. Show cached note excerpts and refresh labels as profile metadata arrives, while retaining compact rows and moderation filtering.
+
 ## [1.9.0] - 2026-10-31
 
 ### Added

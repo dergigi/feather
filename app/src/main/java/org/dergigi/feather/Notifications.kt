@@ -76,6 +76,38 @@ private enum class NotificationType(val label: String) {
 internal data class NotificationPreview(val event: Event, val actor: String?, val text: String,
     val action: String, val reaction: ReactionChoice? = null, val amount: String? = null)
 
+/** Resolve before truncating: a long encoded reference can otherwise consume the whole row. */
+private fun notificationText(text: String, event: Event, profiles: Map<String, Profile>,
+    embedded: Map<String, Event>, filter: ContentFilter): String {
+    fun compact(body: String, source: Event, includeExcerpt: Boolean): String = buildString {
+        var offset = 0
+        for (token in NostrContent.tokens(body, source)) {
+            append(body.substring(offset, token.start))
+            val ref = token.reference
+            when {
+                ref == null || ref.hashtag != null -> append(token.text)
+                ref.profile -> append("@${profiles[ref.id]?.name ?: FeatherRepository.shortKey(ref.id)}")
+                else -> {
+                    val target = embedded[ref.id]?.takeUnless { filter.hides(ref) || filter.hides(it) }
+                    val author = target?.pubKey ?: ref.author
+                    val name = author?.let { profiles[it]?.name ?: FeatherRepository.shortKey(it) }
+                    append("↗ ")
+                    append(name?.let { "@$it" } ?: FeatherRepository.shortKey(ref.id))
+                    if (includeExcerpt && target != null) {
+                        val excerpt = target.tagValue("title")
+                            ?: MediaContent.text(target, MediaContent.attachments(target, 32))
+                        val resolved = compact(excerpt, target, false).replace(Regex("\\s+"), " ").trim().take(120)
+                        if (resolved.isNotEmpty()) { append(": "); append(resolved) }
+                    }
+                }
+            }
+            offset = token.end
+        }
+        append(body.substring(offset))
+    }
+    return compact(text.withoutObjectMarkers(), event, true).take(400)
+}
+
 internal data class NotificationSnapshot(
     val owner: String,
     val types: Int,
@@ -124,7 +156,7 @@ internal fun NotificationsPage(vm: FeatherViewModel, navigation: ReaderNavigatio
     // on Back would clamp its saved index before the background previews are ready.
     val snapshot by produceState<NotificationSnapshot?>(
         entry.notifications?.takeIf { it.owner == owner && it.types == selectedTypes },
-        owner, events, state.embedded, filter, selectedTypes,
+        owner, events, state.embedded, state.profiles, filter, selectedTypes,
     ) {
         val previousRows = entry.notifications?.takeIf { it.owner == owner }?.previews.orEmpty().associateBy { it.event.id }
         val rows = withContext(Dispatchers.Default) {
@@ -138,7 +170,7 @@ internal fun NotificationsPage(vm: FeatherViewModel, navigation: ReaderNavigatio
                 val text = payment?.comment?.takeIf { it.isNotBlank() }
                     ?: source?.let { it.tagValue("title") ?: MediaContent.text(it, MediaContent.attachments(it, 32)) }
                     ?: previousRows[event.id]?.text.orEmpty()
-                NotificationPreview(event, actor, text.withoutObjectMarkers().take(400), when(event.kind) {
+                NotificationPreview(event, actor, notificationText(text, source ?: event, state.profiles, state.embedded, filter), when(event.kind) {
                     6, 16 -> "Repost"; 7 -> "Reaction"; 9735 -> "Zap"; 9321 -> "Nutzap"
                     else -> if (Protocol.isReply(event)) "Reply" else "Mention"
                 }, if (event.kind == 7) reactionChoice(event) else null,
