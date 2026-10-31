@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-10-31
+
+### Changed
+- Restore compact article-tab previews: title and summary beside a small thumbnail, with reading time next to the header timestamp. Keep large recipe cards and full article covers.
+
 ## [1.10.2] - 2026-10-31
 
 ### Changed

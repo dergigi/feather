@@ -38,7 +38,7 @@ internal fun ArticleContent(event: Event, compact: Boolean, onReference: (NostrC
 }
 
 @Composable
-internal fun ArticleListRow(event: Event, author: String, picture: String?, onProfile: () -> Unit, onOpen: () -> Unit) {
+internal fun ArticleListRow(event: Event, author: String, picture: String?, onProfile: () -> Unit, onOpen: () -> Unit, compactOverview: Boolean = false) {
     val moderationKey = remember(event.id) { Any() }
     Column(Modifier.fillMaxWidth().clickable(onClickLabel = if (isRecipe(event)) "Read recipe" else "Read article", onClick = onOpen)
         .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -54,7 +54,7 @@ internal fun ArticleListRow(event: Event, author: String, picture: String?, onPr
                 NoteTimestamp(event)
             }
         }
-        ArticlePreview(event)
+        ArticlePreview(event, compactOverview = compactOverview && !isRecipe(event))
     }
 }
 
@@ -96,7 +96,7 @@ private data class ArticlePreviewModel(val title: String, val excerpt: String, v
 
 /** A bounded, non-interactive excerpt keeps the entire preview a reliable article target. */
 @Composable
-private fun ArticlePreview(event: Event) {
+private fun ArticlePreview(event: Event, compactOverview: Boolean = false) {
     val bodyStyle = MaterialTheme.typography.bodyMedium
     val model by produceState<ArticlePreviewModel?>(null, event.id, bodyStyle) {
         value = withContext(Dispatchers.Default) {
@@ -112,6 +112,19 @@ private fun ArticlePreview(event: Event) {
     val preview = model
     if (preview == null) Box(Modifier.fillMaxWidth().height(88.dp), contentAlignment = Alignment.CenterStart) {
         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+    } else if (compactOverview) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(preview.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium,
+                    maxLines = 3, overflow = TextOverflow.Ellipsis)
+                if (preview.excerpt.isNotBlank() && preview.excerpt != preview.title) Text(preview.excerpt,
+                    style = bodyStyle, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            preview.cover?.let { cover ->
+                RemoteImage(cover, Modifier.size(88.dp).clip(RoundedCornerShape(12.dp)), preview.title, crop = true)
+            }
+        }
     } else {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (preview.cover != null) {

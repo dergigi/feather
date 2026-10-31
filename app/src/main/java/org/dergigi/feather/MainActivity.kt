@@ -1090,6 +1090,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                                         openNote(original)
                                     } else NoteRow(note, s, onReference = ::openReference, onProfile = { openProfile(note.pubKey) }, onOpen = { if (note.kind == 7) reactionTarget(note)?.let(::openReference) else { openNote(note) } },
                                         showHashtagMatch = screen == "feed" && profileTab == ProfileTab.POSTS && note.matchesHashtags(s.followedHashtags),
+                                        compactArticleOverview = screen != "thread" && profileTab == ProfileTab.ARTICLES,
                                         compact = !row.focused, threadRow = row.takeIf { screen == "thread" || row.above || row.below },
                                         showParent = if (screen == "thread") row.focused && !parentRendered else !row.above,
                                         parentLoading = screen == "thread" && row.focused && s.threadId == threadId && s.threadContextLoading,
@@ -1276,7 +1277,7 @@ private fun RepostRow(repost: Event, state: FeedState, onReference: (NostrConten
 @Composable
 private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Reference) -> Unit, onProfile: () -> Unit, onOpen: () -> Unit, compact: Boolean = true, repost: Event? = null,
     threadRow: ConversationRow? = null, showParent: Boolean = true, parentLoading: Boolean = false, onMore: (() -> Unit)? = null,
-    showHashtagMatch: Boolean = false) {
+    showHashtagMatch: Boolean = false, compactArticleOverview: Boolean = false) {
     if (LocalContentFilter.current.hides(note)) return
     if (note.kind in listOf(9735, 9321)) {
         ZapActivityCard(note, state, onReference)
@@ -1284,7 +1285,8 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
     }
     val profile = state.profiles[note.pubKey]
     if (note.kind == 30023 && compact) {
-        ArticleListRow(note, profile?.name ?: FeatherRepository.shortKey(note.pubKey), profile?.picture, onProfile, onOpen)
+        ArticleListRow(note, profile?.name ?: FeatherRepository.shortKey(note.pubKey), profile?.picture, onProfile, onOpen,
+            compactOverview = compactArticleOverview)
         return
     }
     var expanded by rememberSaveable(note.id) { mutableStateOf(false) }
