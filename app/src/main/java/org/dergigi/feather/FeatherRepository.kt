@@ -1276,6 +1276,27 @@ class FeatherRepository(context: Context) {
         return Triple(pool.values.toList(), view, deletions)
     }
 
+    private suspend fun refreshFeedDiscovery(feedAuthors: List<String>?, mutedAuthors: Set<String>, mutedWords: Set<String>) {
+        val discoveryKey = feedAuthors to mutedAuthors
+        val discoveryNow = android.os.SystemClock.elapsedRealtime()
+        if (feedDiscoveryKey != discoveryKey || discoveryNow - feedDiscoveryAt >= 5_000) {
+            val discoveredFeed = mutex.withLock {
+                db.query<Event>(profileKinds.flatMap { kind -> Filter(kinds = listOf(kind), authors = feedAuthors, limit = 80).activityFilters() } +
+                    Filter(kinds = listOf(1, 1111), authors = feedAuthors, limit = 80).podcastTagFilters() + recipeFilter(80))
+            }
+            val feedFilter = ContentFilter(mutedAuthors, state.value.embedded, showSensitive = state.value.showSensitive, deletedNotes = state.value.deletedNotes, words = mutedWords)
+            val discoveryEvents = latestProfileEvents(discoveredFeed).filterNot(noteDeletions::hides).filterNot(::engagementDeleted).filterNot(feedFilter::hides)
+            val recentTopics = timeline(Filter(kinds = listOf(1), since = topicSince(), limit = 600), emptyList(), 600)
+                .filterNot(feedFilter::hides)
+            feedDiscoveryPages = ProfileTab.entries.associateWith { candidate ->
+                if (candidate == ProfileTab.HASHTAGS) recentTopics.filter(candidate::matches)
+                else discoveryEvents.filter(candidate::matchesFeed)
+            }
+            feedDiscoveryKey = discoveryKey
+            feedDiscoveryAt = discoveryNow
+        }
+    }
+
     private suspend fun snapshotContents(initialFeedOnly: Boolean = false) {
         refreshDeletedReactions()
         rememberDeleted(cachedViewEvents())
@@ -1367,24 +1388,7 @@ class FeatherRepository(context: Context) {
             }
             return
         }
-        val discoveryKey = feedAuthors to mutedAuthors
-        val discoveryNow = android.os.SystemClock.elapsedRealtime()
-        if (feedDiscoveryKey != discoveryKey || discoveryNow - feedDiscoveryAt >= 5_000) {
-            val discoveredFeed = mutex.withLock {
-                db.query<Event>(profileKinds.flatMap { kind -> Filter(kinds = listOf(kind), authors = feedAuthors, limit = 80).activityFilters() } +
-                    Filter(kinds = listOf(1, 1111), authors = feedAuthors, limit = 80).podcastTagFilters() + recipeFilter(80))
-            }
-            val feedFilter = ContentFilter(mutedAuthors, state.value.embedded, showSensitive = state.value.showSensitive, deletedNotes = state.value.deletedNotes, words = mutedWords)
-            val discoveryEvents = latestProfileEvents(discoveredFeed).filterNot(noteDeletions::hides).filterNot(::engagementDeleted).filterNot(feedFilter::hides)
-            val recentTopics = timeline(Filter(kinds = listOf(1), since = topicSince(), limit = 600), emptyList(), 600)
-                .filterNot(feedFilter::hides)
-            feedDiscoveryPages = ProfileTab.entries.associateWith { candidate ->
-                if (candidate == ProfileTab.HASHTAGS) recentTopics.filter(candidate::matches)
-                else discoveryEvents.filter(candidate::matchesFeed)
-            }
-            feedDiscoveryKey = discoveryKey
-            feedDiscoveryAt = discoveryNow
-        }
+        refreshFeedDiscovery(feedAuthors, mutedAuthors, mutedWords)
         val previews = feedDiscoveryPages
         val feedTabs = (listOf(ProfileTab.POSTS) + ProfileTab.entries.filter {
             it != ProfileTab.POSTS && previews[it].orEmpty().isNotEmpty()
