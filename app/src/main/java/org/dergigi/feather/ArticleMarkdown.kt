@@ -75,6 +75,7 @@ internal fun ArticleMarkdown(event: Event, onReference: (NostrContent.Reference)
                     style = typography.headlineLarge, color = Color.White)
             }
         } else if (title != null) Text(title, Modifier.padding(horizontal = 24.dp), style = typography.headlineLarge)
+        if (articleLayout && isRecipe(event)) RecipeDetails(event, Modifier.padding(horizontal = 24.dp))
         if (body == null) CircularProgressIndicator(Modifier.padding(horizontal = 24.dp).size(24.dp), strokeWidth = 2.dp)
         else CompositionLocalProvider(
             LocalUriHandler provides links,

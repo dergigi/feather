@@ -18,7 +18,7 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
     POLLS(listOf(1068), "Polls"), VOICE(voiceKinds, "Voice"), PODCASTS(podcastKinds, "Podcasts"),
     BOOKMARKS(listOf(10003, 30003), "Bookmarks"), APPS(listOf(32267), "Apps"),
     ARTICLES(listOf(30023), "Articles"), PEOPLE(listOf(3, 30000), "People"), PROJECTS(listOf(30617), "Projects"), EMOJI_PACKS(listOf(30030), "Emoji packs"),
-    ISSUES(listOf(1621), "Issues"), HASHTAGS(listOf(1), "Hashtags");
+    ISSUES(listOf(1621), "Issues"), HASHTAGS(listOf(1), "Hashtags"), RECIPES(listOf(30023), "Recipes");
     internal val orderPriority: Int
         get() = when (this) {
             SEARCH -> -2
@@ -42,6 +42,7 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
             PROJECTS -> 16
             ISSUES -> 17
             EMOJI_PACKS -> 18
+            RECIPES -> 19
         }
 
     internal val profileOrderPriority: Int
@@ -52,6 +53,8 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
         POSTS -> if (event.kind == 1) !Protocol.isReply(event) else repostTarget(event) != null
         REPLIES -> Protocol.isReply(event)
         PODCASTS -> isPodcastActivity(event)
+        RECIPES -> isRecipe(event)
+        ARTICLES -> !isRecipe(event)
         ZAPS -> zapActivity(event) != null
         REPOSTS -> repostTarget(event) != null
         EMOJI_PACKS -> !event.tagValue("d").isNullOrBlank() && collectionEmojis(event).isNotEmpty()

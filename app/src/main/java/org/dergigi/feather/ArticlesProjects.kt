@@ -40,7 +40,7 @@ internal fun ArticleContent(event: Event, compact: Boolean, onReference: (NostrC
 
 @Composable
 internal fun ArticleListRow(event: Event, author: String, picture: String?, onProfile: () -> Unit, onOpen: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Read article", onClick = onOpen)
+    Column(Modifier.fillMaxWidth().clickable(onClickLabel = if (isRecipe(event)) "Read recipe" else "Read article", onClick = onOpen)
         .padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         ArticlePreview(event)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
@@ -52,7 +52,7 @@ internal fun ArticleListRow(event: Event, author: String, picture: String?, onPr
                 Text(author, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            ArticleReadingTime(event)
+            if (!isRecipe(event)) ArticleReadingTime(event)
             ArticleDate(event)
         }
     }
@@ -127,6 +127,15 @@ private fun ArticlePreview(event: Event) {
     val preview = model
     if (preview == null) Box(Modifier.fillMaxWidth().height(88.dp), contentAlignment = Alignment.CenterStart) {
         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+    } else if (isRecipe(event)) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            preview.cover?.let { cover ->
+                RemoteImage(cover, Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(RoundedCornerShape(12.dp)), preview.title)
+            }
+            Text(preview.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium,
+                maxLines = 3, overflow = TextOverflow.Ellipsis)
+            RecipeDetails(event)
+        }
     } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(preview.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium,

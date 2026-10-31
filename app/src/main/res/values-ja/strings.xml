@@ -231,4 +231,7 @@
     <string name="ui_create_picture_post">写真を投稿</string>
     <string name="ui_add_photos">写真を追加</string>
     <string name="ui_mute_after_reporting">通報後にミュート</string>
+    <string name="ui_recipe_prep">下ごしらえ: %1$s</string>
+    <string name="ui_recipe_cook">調理: %1$s</string>
+    <string name="ui_recipe_servings">分量: %1$s</string>
 </resources>

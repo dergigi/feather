@@ -441,3 +441,7 @@ On a Photos tab, the compose FAB uses a photo outline with an overlapping Feathe
 ## Blossom references
 
 Read BUD-10 `blossom:` media through the normal image/audio/video paths. Preserve the original reference as the cache and sharing identity. Resolve explicit server hints before public author kind-10063 lists, then bounded public fallback servers. Discovery and retrieval stay off-main and share bounded server-list results. Retain the HTTPS-only media policy; do not enable cleartext globally. Verify complete downloads against the content hash and optional size; streaming range requests validate advertised total size when available.
+
+## Recipes
+
+Recipes are public kind-30023 articles marked with the exact `zapcooking` or legacy `nostrcooking` t tag, as used by [zap.cooking](https://github.com/zapcooking/frontend/blob/main/src/lib/consts.ts). Use a fork-and-knife tab at the right end of the main categories. Its discovery feed is global, independent of follows: bounded tagged queries to pantry.zap.cooking and two existing read relays. Reuse event storage, addressable replacement handling, moderation, cache-first paging, article reading, and note interactions. Recipes have photo-led previews and optional structured prep/cook/serving values. Ordinary Articles exclude recipes. Profile and hashtag recipe views retain their author/topic scope. No recipe publishing, private recipe access, meal planning, or additional settings.

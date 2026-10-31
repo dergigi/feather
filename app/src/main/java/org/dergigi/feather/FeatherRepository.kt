@@ -274,7 +274,7 @@ class FeatherRepository(context: Context) {
     private fun stopProfileSweep() { profileSweep?.cancel(); profileSweep = null; profileSweepKey = null }
     private fun profileReadRelays(author: String, tab: ProfileTab): List<String> =
         (relayLists[author]?.write.orEmpty().ifEmpty { state.value.relays } +
-            listOfNotNull(ZAPSTORE_RELAY.takeIf { tab == ProfileTab.APPS }) +
+            listOfNotNull(ZAPSTORE_RELAY.takeIf { tab == ProfileTab.APPS }, RECIPE_RELAY.takeIf { tab == ProfileTab.RECIPES }) +
             if (tab == ProfileTab.ISSUES) IssueReports.RELAYS else emptyList()).distinct()
 
     private var historyJob: Job? = null
@@ -648,7 +648,7 @@ class FeatherRepository(context: Context) {
         val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + profileAuthors.take(64) + s.following.take(999) + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
         val usableLists = relayLists.mapValues { (_, list) -> Outbox.RelayList(list.read.filter(::healthy), list.write.filter(::healthy)) }
         val popular = Outbox.readRoutes(authors, usableLists, s.relays).keys
-        val next = (s.relays + (priority + popular).mapNotNull(Protocol::relay).distinct().filter { it !in s.relays }.take(8)).toSet()
+        val next = (s.relays + RECIPE_RELAY + (priority + popular).mapNotNull(Protocol::relay).distinct().filter { it !in s.relays }.take(8)).toSet()
         if (next != routingPool) {
             routingPool = next
             historyJob?.cancel()
@@ -689,6 +689,7 @@ class FeatherRepository(context: Context) {
             ?: run { client.unsubscribe("account"); client.unsubscribe("contacts"); client.unsubscribe("account-settings") }
         val authors = s.publicKey?.let { (listOf(it) + s.following).take(1000) }
         val feedRoutes = when (selectedFeed) {
+            ProfileTab.RECIPES -> recipeRoutes()
             ProfileTab.HASHTAGS -> topicFilters()
             ProfileTab.POSTS -> homeFilters(authors, s.followedHashtags)
             else -> authorFilters(authors, selectedFeed.feedKinds(), 80)
@@ -702,8 +703,9 @@ class FeatherRepository(context: Context) {
         val topicDiscovery = topicFilters().mapValues { (_, filters) -> filters.map {
             Filter(kinds = it.kinds, since = it.since, limit = 80)
         } }
-        client.subscribe("feed-discovery", (discovery.keys + topicDiscovery.keys).associateWith {
-            discovery[it].orEmpty() + topicDiscovery[it].orEmpty()
+        val recipeDiscovery = recipeRoutes(limit = 8)
+        client.subscribe("feed-discovery", (discovery.keys + topicDiscovery.keys + recipeDiscovery.keys).associateWith {
+            discovery[it].orEmpty() + topicDiscovery[it].orEmpty() + recipeDiscovery[it].orEmpty()
         }, listener)
         viewedProfile?.let { subscribeProfile(it) }
         viewedThread?.let { subscribeThread(it) }
@@ -1311,6 +1313,7 @@ class FeatherRepository(context: Context) {
         val previousFeed = state.value.notes.takeIf { state.value.feedTab == feed }.orEmpty()
         val feedLimit = if (initialFeedOnly) 120 else 600
         val all = when (feed) {
+            ProfileTab.RECIPES -> latestProfileEvents(timeline(recipeFilter(feedLimit, feedCeiling), previousFeed, feedLimit))
             ProfileTab.HASHTAGS -> timeline(Filter(kinds = listOf(1), since = topicSince(), limit = 600), emptyList(), 600)
             ProfileTab.POSTS -> {
                 val authored = timeline(Filter(kinds = feed.feedKinds(), authors = feedAuthors, limit = feedLimit, until = feedCeiling),
@@ -1369,7 +1372,7 @@ class FeatherRepository(context: Context) {
         if (feedDiscoveryKey != discoveryKey || discoveryNow - feedDiscoveryAt >= 5_000) {
             val discoveredFeed = mutex.withLock {
                 db.query<Event>(profileKinds.flatMap { kind -> Filter(kinds = listOf(kind), authors = feedAuthors, limit = 80).activityFilters() } +
-                    Filter(kinds = listOf(1, 1111), authors = feedAuthors, limit = 80).podcastTagFilters())
+                    Filter(kinds = listOf(1, 1111), authors = feedAuthors, limit = 80).podcastTagFilters() + recipeFilter(80))
             }
             val feedFilter = ContentFilter(mutedAuthors, state.value.embedded, showSensitive = state.value.showSensitive, deletedNotes = state.value.deletedNotes, words = mutedWords)
             val discoveryEvents = latestProfileEvents(discoveredFeed).filterNot(noteDeletions::hides).filterNot(::engagementDeleted).filterNot(feedFilter::hides)
@@ -1395,7 +1398,7 @@ class FeatherRepository(context: Context) {
         val profileCeiling = profileUntil
         val profileCount = profileLimit
         val profileEvents = profile?.let { author ->
-            latestProfileEvents(timeline(Filter(kinds = tab.kinds, authors = listOf(author), limit = profileCount, until = profileCeiling), state.value.profileEvents, profileCount))
+            latestProfileEvents(timeline(if (tab == ProfileTab.RECIPES) recipeFilter(profileCount, profileCeiling, author) else Filter(kinds = tab.kinds, authors = listOf(author), limit = profileCount, until = profileCeiling), state.value.profileEvents, profileCount))
         }.orEmpty()
         val availableTabs = profile?.let { author ->
             val discovered = mutex.withLock {
@@ -2422,7 +2425,7 @@ class FeatherRepository(context: Context) {
                 profileTab == tab && state.value.publicKey == owner && profileUntil == ceiling && profileLimit == limit
             val retained = state.value.profileEvents.filter { it.involves(author) }
             val events = latestProfileEvents(timeline(
-                Filter(kinds = tab.kinds, authors = listOf(author), limit = limit, until = ceiling), retained, limit))
+                if (tab == ProfileTab.RECIPES) recipeFilter(limit, ceiling, author) else Filter(kinds = tab.kinds, authors = listOf(author), limit = limit, until = ceiling), retained, limit))
             ensureActive()
             if (!current()) return@launch
             rememberDeleted(events)
@@ -2473,13 +2476,13 @@ class FeatherRepository(context: Context) {
                     Filter(authors = listOf(key), kinds = listOf(kind), limit = if (kind in tab.kinds) 80 else 1).activityFilters()
                 }
                 val podcastFilters = Filter(authors = listOf(key), kinds = listOf(1, 1111), limit = if (tab == ProfileTab.PODCASTS) 80 else 1).podcastTagFilters()
-                val requests = filters + podcastFilters
+                val requests = filters + podcastFilters + recipeFilter(if (tab == ProfileTab.RECIPES) 80 else 1, author = key)
                 profileQueries.fetch(allRelays, requests.map { it.toJson() }) { relay, event ->
                     active && viewedProfile == key && profileTab == tab && requests.any { it.match(event) } && accept(event, seenAt = relay)
                 }
             }
         }
-        val routes = profileFilters(key, tab.kinds, 80)
+        val routes = if (tab == ProfileTab.RECIPES) allRelays.associate { it.normalizeRelayUrl() to listOf(recipeFilter(80, author = key)) } else profileFilters(key, tab.kinds, 80)
         // Separate kind filters keep ordinary notes from starving dedicated media posts.
         client.subscribe("profile", routes, listener)
         // Small independent existence probes keep rare kinds from being crowded out by notes.
@@ -2687,6 +2690,10 @@ class FeatherRepository(context: Context) {
             if (active) subscribeFeed()
         }
     }
+    private fun recipeRoutes(until: Long? = null, limit: Int = 80) =
+        (listOf(RECIPE_RELAY) + state.value.relays.take(2)).distinct().associate {
+            it.normalizeRelayUrl() to listOf(recipeFilter(limit, until))
+        }
     private fun topicSince() = System.currentTimeMillis() / 1000 - 24 * 60 * 60
     private fun topicFilters() = state.value.relays.associate {
         it.normalizeRelayUrl() to listOf(Filter(kinds = listOf(1), since = topicSince(), limit = 200))
@@ -2727,7 +2734,7 @@ class FeatherRepository(context: Context) {
                 if (!sameScreen()) return@launch
                 val current = state.value
                 val homeFeed = author == null && tag == null && feed == ProfileTab.POSTS
-                val authors = if (tag != null) tagAuthor?.let(::listOf) else author?.let(::listOf) ?: account?.let { (listOf(it) + current.following).take(1000) }
+                val authors = if (author == null && tag == null && feed == ProfileTab.RECIPES) null else if (tag != null) tagAuthor?.let(::listOf) else author?.let(::listOf) ?: account?.let { (listOf(it) + current.following).take(1000) }
                 val kinds = if (author != null) tab.kinds else if (tag != null) tagTab.hashtagKinds() else feed.feedKinds()
                 val events = (if (tag != null) current.hashtagNotes.takeIf {
                     current.hashtagFor == tag && current.hashtagAuthor == tagAuthor && current.hashtagTab == tagTab
@@ -2735,21 +2742,21 @@ class FeatherRepository(context: Context) {
                     .filter { it.kind in kinds && (authors == null || it.pubKey in authors || (homeFeed && it.matchesHashtags(current.followedHashtags)) || (it.kind == 9321 && it.tagValue("p") in authors) || (it.kind == 9735 && (it.tagValue("p") in authors || it.tagValue("P") in authors))) }
                 val oldest = events.minOfOrNull { it.createdAt } ?: return@launch
                 if (oldest <= 0) return@launch
-                val filter = Filter(kinds = kinds, authors = authors, tags = tag?.let { mapOf("t" to listOf(it)) }, limit = 80, until = oldest - 1)
+                val filter = if (author != null && tab == ProfileTab.RECIPES) recipeFilter(80, oldest - 1, author) else if (author == null && tag == null && feed == ProfileTab.RECIPES) recipeFilter(80, oldest - 1) else Filter(kinds = kinds, authors = authors, tags = tag?.let { mapOf("t" to listOf(it)) }, limit = 80, until = oldest - 1)
                 val filters = filter.activityFilters() + if (homeFeed && authors != null && current.followedHashtags.isNotEmpty())
                     listOf(Filter(kinds = listOf(1), tags = mapOf("t" to current.followedHashtags.toList()), limit = 80, until = oldest - 1)) else emptyList()
                 val cached = mutex.withLock { db.query<Event>(filters) }
                 var found = cached.isNotEmpty()
                 if (author != null) {
                     // Local history is not evidence that every write relay was queried.
-                    val filters = kinds.flatMap { kind -> Filter(kinds = listOf(kind), authors = listOf(author), limit = 80, until = oldest - 1).activityFilters() } +
+                    val filters = if (tab == ProfileTab.RECIPES) listOf(recipeFilter(80, oldest - 1, author)) else kinds.flatMap { kind -> Filter(kinds = listOf(kind), authors = listOf(author), limit = 80, until = oldest - 1).activityFilters() } +
                         if (tab == ProfileTab.PODCASTS) Filter(kinds = listOf(1, 1111), authors = listOf(author), limit = 80, until = oldest - 1).podcastTagFilters() else emptyList()
                     val received = profileQueries.fetch(profileReadRelays(author, tab), filters.map { it.toJson() }) { relay, event ->
                         sameScreen() && historySequence.get() == sequence && filters.any { it.match(event) } && accept(event, history = true, seenAt = relay)
                     }
                     found = found || received
                 } else if (!found) {
-                    val routes = if (homeFeed) homeFilters(authors, current.followedHashtags, oldest - 1) else if (tag != null) hashtagFilters(tag, oldest - 1, tagAuthor, tagTab) else if (author != null) profileFilters(author, kinds, 80, oldest - 1) else authorFilters(authors, kinds, 80, oldest - 1)
+                    val routes = if (author == null && tag == null && feed == ProfileTab.RECIPES) recipeRoutes(oldest - 1) else if (homeFeed) homeFilters(authors, current.followedHashtags, oldest - 1) else if (tag != null) hashtagFilters(tag, oldest - 1, tagAuthor, tagTab) else if (author != null) profileFilters(author, kinds, 80, oldest - 1) else authorFilters(authors, kinds, 80, oldest - 1)
                     if (routes.isEmpty()) return@launch
                     val complete = CompletableDeferred<Unit>()
                     val ended = java.util.concurrent.ConcurrentHashMap.newKeySet<NormalizedRelayUrl>()

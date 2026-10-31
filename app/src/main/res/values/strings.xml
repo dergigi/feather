@@ -231,4 +231,7 @@
     <string name="ui_create_picture_post">Create photo post</string>
     <string name="ui_add_photos">Add photos</string>
     <string name="ui_mute_after_reporting">Mute after reporting</string>
+    <string name="ui_recipe_prep">Prep: %1$s</string>
+    <string name="ui_recipe_cook">Cook: %1$s</string>
+    <string name="ui_recipe_servings">Servings: %1$s</string>
 </resources>

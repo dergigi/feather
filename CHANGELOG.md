@@ -4,6 +4,10 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Added
+- Add a fork-and-knife Recipes tab for zap.cooking recipes, including its legacy `nostrcooking` tags. Discover public recipes independently of follows, browse photo-led cards, and read ingredients and instructions with existing article and note actions.
+- Show recipe preparation time, cooking time and servings when supplied in structured tags. Keep recipes separate from Articles and expose the category in profile and hashtag views when matching recipes are present.
+
 ## [1.9.1] - 2026-10-31
 
 ### Fixed
