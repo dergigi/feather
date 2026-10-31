@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Added
+- Publish a visual recipe-tab interview on the Feather blog, with cropped screenshots and a dedicated tab illustration.
+
 ## [1.10.1] - 2026-10-31
 
 ### Changed

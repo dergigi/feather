@@ -58,3 +58,11 @@
 @media(max-width:480px){.blog-shortcuts{padding:20px 16px}.blog-shortcuts .shortcut-grid{gap:24px 12px}}
 
 .workflow-laptop-apps{display:flex;align-items:center;justify-content:center;gap:18px}.workflow-laptop-apps .workflow-app{gap:6px;font-size:12px}.workflow-laptop-apps .workflow-app img{width:24px;height:24px;padding:3px;border-radius:7px}.workflow-laptop-screen .workflow-clankers{justify-content:center;gap:4px 10px;padding-top:8px}.workflow-laptop-screen .workflow-clankers span{text-align:center;font-size:10px;line-height:1.2}
+
+/* Recipe interview: an editorial tab illustration and a native swipeable screenshot strip. */
+.recipe-tab-figure{margin:32px 0 40px}.recipe-tab-figure img{display:block;width:100%;height:auto;border-radius:20px}
+.recipe-tab-figure figcaption,.recipe-screens figcaption{font-size:13px;line-height:1.5;color:var(--muted);margin-top:12px}
+.recipe-screens{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 4px 22px;margin:32px -4px 40px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--sky) transparent}
+.recipe-screens figure{flex:0 0 min(280px,82%);min-width:0;margin:0;scroll-snap-align:start}
+.recipe-screens img{display:block;width:100%;height:auto;border-radius:18px;border:1px solid var(--line);background:white}
+.recipe-screens a{display:block;border-radius:18px}.recipe-screens:focus-visible,.recipe-screens a:focus-visible{outline:2px solid var(--blue);outline-offset:4px}

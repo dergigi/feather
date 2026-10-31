@@ -1,0 +1,6 @@
+Screenshots supplied by Gigi on 2026-10-31.
+Published screenshot derivatives: crop 1008x2042 at x=0, y=148 from 1008x2244 captures (remove Android status and navigation bars); resize to 720x1459, strip metadata, WebP quality 86.
+recipe-tab.svg: editorial mock-up using Feather drawable paths (voice, poll, recipe, hashtag) and heart outline, with recipe cards cropped from supplied screenshots. Recipe tab is intentionally enlarged for emphasis.
+Baked Apple Chips: Dr. The Daniel. Turkish Eggplant Moussaka: SkyLords. Card titles are preserved from the app screenshots.
+recipe-tab.png: 1200x630 raster derivative for social previews.
+No original status-bar captures are published.
