@@ -2103,3 +2103,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `23af6a762b004b86d687e81be1815f41afc6cabc913938abb6716be655b1a2f3`; 16,437,865 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
 - Zapstore release `7557c420821d1f5a24b2a5f36d58d835d978b93c6d0f12522c7a1821a822c8b0` references asset `0d23e69ae3e41f031b5014c6edabd379f973574b3dba0f229cbc5c6be0cfd972`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. Verification used IPv4 after connection timeouts. No website deployment.
 - Shared article/recipe covers retain author/timestamp placement, coverless fallback and existing Markdown parsing. Reader title containers can grow for long titles and larger fonts. Visual behavior remains for device review.
+
+## 2026-10-31 — 1.10.2 release
+
+- Release source/tag `e09030f8d78fbeb6484cff750b10c3dbc8183b96`; versionCode 235.
+- Signed release build passed in 36s. No tests or emulators run. Package/version and expected signing certificate verified; mapping archived.
+- APK SHA-256 `bcc9a02b364af6d744be9047516db66ca850d4216a0acf8a9fdf9c1a93e57f6a`; 16,437,865 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
+- Zapstore release `03a2d96b6f2d3fd56590f531317a17d334716835de15c7cefe533781c9e711a1` references asset `2993daa9ced5d6b672f510619e74dce8d89f2448cf6d90511864f9a5613ca387`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment as part of this release.
+- Article reading time moved beside timestamps in cards and reader. Reader toolbar title uses one line with ellipsis and a 48dp-high scroll-to-top target. Device interaction review remains manual.
