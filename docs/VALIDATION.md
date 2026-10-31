@@ -2119,3 +2119,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `68d8ed74fab5b0e8cb740032773f221d7eec3bdb0a36ed18f070ca78afa3ada2`; 16,437,865 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
 - Zapstore release `1ce2a7be778c8611ee8e920cd56df2f50789e55a194dd5ef6599211cc71614df` references asset `4c2fb2f681497b4081cf069a56d161709ece0ba26994a404c58cbf643b83bf72`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
 - Compact title/summary and 88dp thumbnail enabled only in Articles tabs. Recipe previews and full reader covers retain their design; reading time remains beside the timestamp. Device review remains manual.
+
+## 2026-10-31 — 1.10.4 release
+
+- Release source/tag `3c5cad8d0367f90f71526d08ab9f186b98e07ad4`; versionCode 237.
+- Signed release build passed in 32s. No tests or emulators run. Package/version and expected signing certificate verified; mapping archived.
+- APK SHA-256 `c971e075ece55c92f639912d47958d04f79202a5f910e7ef49530d01cf96f0c6`; 16,437,865 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
+- Zapstore release `72a4bb2b8720cdc7cf9b361a9ff6a2beec84ee7da22059ba9e38a58042c676bf` references asset `a85f6b71d9a2b326fd4700fbf60ab0f229f2bbeba926c81926681e2142815394`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
+- Compact article previews now apply throughout the app, including embedded links. Recipe previews and full reader covers retain their design. Device review remains manual.
