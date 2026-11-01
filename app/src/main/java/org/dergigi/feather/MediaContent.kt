@@ -29,7 +29,10 @@ object MediaContent {
             }.toMap()
             fields["url"]?.let { it to fields }
         }.toMap()
-        val candidates = metadata.keys.asSequence() + urls.findAll(event.content).map { it.value.trimEnd('.', ',', ')', ']', '!', '?') }
+        val contentUrls = urls.findAll(event.content).map { it.value.trimEnd('.', ',', ')', ']', '!', '?') }
+        // Picture and video posts keep media in imeta while their content is a caption.
+        // Ordinary notes must reference their media in the text; unrelated imeta tags stay ignored.
+        val candidates = if (event.kind == 20 || event.kind in videoKinds) metadata.keys.asSequence() + contentUrls else contentUrls
         return candidates.distinct().mapNotNull { url ->
             if (mediaUrl(url) == null) return@mapNotNull null
             val fields = metadata[url].orEmpty()

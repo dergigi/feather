@@ -15,7 +15,7 @@ class MediaContentTest {
         val media = MediaContent.attachments(event)
         assertEquals(1, media.size)
         assertEquals(MediaContent.Kind.VIDEO, media.single().kind)
-        assertEquals(.6f, media.single().ratio)
+        assertEquals(9f / 16f, media.single().ratio)
         assertEquals("https://cdn.example/poster.jpg", media.single().preview)
         assertEquals("Hello", MediaContent.text(event, media))
     }
