@@ -589,13 +589,21 @@ class FeatherRepository(context: Context) {
             listOf(Filter(authors = listOf(author), kinds = listOf(32267), limit = limit, until = until))) else result
         return withIssueRoutes(catalog, listOf(author), kinds, limit, until)
     }
+    // A large follow list is membership, not a feed-size budget. Keep every author,
+    // but bound each relay filter; result windows and the relay pool stay bounded separately.
+    private fun batchedAuthorFilters(authors: List<String>?, kinds: List<Int>, limit: Int, until: Long? = null): List<Filter> =
+        if (authors == null) listOf(Filter(kinds = kinds, limit = limit, until = until))
+        else authors.distinct().chunked(500).map { keys ->
+            Filter(authors = keys, kinds = kinds, limit = limit, until = until)
+        }
+
     private fun authorFilters(authors: List<String>?, kinds: List<Int>, limit: Int, until: Long? = null): Map<NormalizedRelayUrl, List<Filter>> {
         val routes = (if (authors == null) routingPool.filter { it != "wss://purplepag.es" }
             .associate { it.normalizeRelayUrl() to listOf(Filter(kinds = kinds, limit = limit, until = until)) }
         else Outbox.readRoutes(authors, relayLists, state.value.relays, allowed = routingPool).mapKeys { it.key.normalizeRelayUrl() }
-            .mapValues { (_, keys) -> listOf(Filter(authors = keys, kinds = kinds, limit = limit, until = until)) }).mapValues { (_, filters) -> filters.flatMap { it.activityFilters() } }
+            .mapValues { (_, keys) -> batchedAuthorFilters(keys, kinds, limit, until) }).mapValues { (_, filters) -> filters.flatMap { it.activityFilters() } }
         val catalog = if (32267 in kinds) routes + (ZAPSTORE_RELAY.normalizeRelayUrl() to
-            listOf(Filter(authors = authors, kinds = listOf(32267), limit = limit, until = until))) else routes
+            batchedAuthorFilters(authors, listOf(32267), limit, until)) else routes
         return withIssueRoutes(catalog, authors, kinds, limit, until)
     }
     private fun withIssueRoutes(routes: Map<NormalizedRelayUrl, List<Filter>>, authors: List<String>?, kinds: List<Int>, limit: Int, until: Long?): Map<NormalizedRelayUrl, List<Filter>> {
@@ -603,16 +611,16 @@ class FeatherRepository(context: Context) {
         val result = routes.toMutableMap()
         IssueReports.RELAYS.forEach { url ->
             val relay = url.normalizeRelayUrl()
-            result[relay] = result[relay].orEmpty() + Filter(authors = authors, kinds = listOf(1621), limit = limit, until = until)
+            result[relay] = result[relay].orEmpty() + batchedAuthorFilters(authors, listOf(1621), limit, until)
         }
         return result
     }
     private fun discoverRelays() {
         val s = state.value
         val threadAuthor = s.threadNotes.find { it.matchesThread(viewedThread) }?.pubKey
-        val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + emojiPackRequests.map { it.author } + profileAuthors.take(64) + s.following.take(999) + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
+        val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + emojiPackRequests.map { it.author } + profileAuthors.take(64) + s.following + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
         if (authors.isEmpty()) client.unsubscribe("relay-lists")
-        else client.subscribe("relay-lists", routingPool.associate { it.normalizeRelayUrl() to listOf(Filter(authors = authors, kinds = listOf(10002), limit = authors.size)) }, listener)
+        else client.subscribe("relay-lists", routingPool.associate { it.normalizeRelayUrl() to authors.chunked(500).map { keys -> Filter(authors = keys, kinds = listOf(10002), limit = keys.size) } }, listener)
     }
     // Use the same bounded routes for publishing and latest-version discovery, including
     // stable public fallbacks a fresh installation can find before it knows the relay list.
@@ -645,7 +653,7 @@ class FeatherRepository(context: Context) {
             threadBranchAuthors().flatMap { relayLists[it]?.read.orEmpty().take(1) + relayLists[it]?.write.orEmpty().take(1) }.distinct().take(3) +
             own?.read.orEmpty() + own?.write.orEmpty() +
             profileAuthors.take(12).flatMap { relayLists[it]?.write.orEmpty().take(1) }).distinct().filter(::healthy)
-        val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + profileAuthors.take(64) + s.following.take(999) + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
+        val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + profileAuthors.take(64) + s.following + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
         val usableLists = relayLists.mapValues { (_, list) -> Outbox.RelayList(list.read.filter(::healthy), list.write.filter(::healthy)) }
         val popular = Outbox.readRoutes(authors, usableLists, s.relays).keys
         val next = (s.relays + RECIPE_RELAY + (priority + popular).mapNotNull(Protocol::relay).distinct().filter { it !in s.relays }.take(8)).toSet()
@@ -687,7 +695,7 @@ class FeatherRepository(context: Context) {
             client.subscribe("account", routes, listener)
         }
             ?: run { client.unsubscribe("account"); client.unsubscribe("contacts"); client.unsubscribe("account-settings") }
-        val authors = s.publicKey?.let { (listOf(it) + s.following).take(1000) }
+        val authors = s.publicKey?.let { (listOf(it) + s.following).distinct() }
         val feedRoutes = when (selectedFeed) {
             ProfileTab.RECIPES -> recipeRoutes()
             ProfileTab.HASHTAGS -> topicFilters()
@@ -1330,7 +1338,7 @@ class FeatherRepository(context: Context) {
         val following = Protocol.follows(contact) - mutedAuthors
         val feedCeiling = feedUntil
         val feed = selectedFeed
-        val feedAuthors = key?.let { (listOf(it) + following).take(1000) }
+        val feedAuthors = key?.let { (listOf(it) + following).distinct() }
         val previousFeed = state.value.notes.takeIf { state.value.feedTab == feed }.orEmpty()
         val feedLimit = if (initialFeedOnly) 120 else 600
         val all = when (feed) {
@@ -2738,7 +2746,7 @@ class FeatherRepository(context: Context) {
                 if (!sameScreen()) return@launch
                 val current = state.value
                 val homeFeed = author == null && tag == null && feed == ProfileTab.POSTS
-                val authors = if (author == null && tag == null && feed == ProfileTab.RECIPES) null else if (tag != null) tagAuthor?.let(::listOf) else author?.let(::listOf) ?: account?.let { (listOf(it) + current.following).take(1000) }
+                val authors = if (author == null && tag == null && feed == ProfileTab.RECIPES) null else if (tag != null) tagAuthor?.let(::listOf) else author?.let(::listOf) ?: account?.let { (listOf(it) + current.following).distinct() }
                 val kinds = if (author != null) tab.kinds else if (tag != null) tagTab.hashtagKinds() else feed.feedKinds()
                 val events = (if (tag != null) current.hashtagNotes.takeIf {
                     current.hashtagFor == tag && current.hashtagAuthor == tagAuthor && current.hashtagTab == tagTab

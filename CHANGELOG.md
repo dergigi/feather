@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Fixed
+- Include every followed account in live feeds, cached feeds, pagination and relay discovery instead of silently excluding accounts beyond the first 999 follows. Split relay author filters into batches while retaining bounded feed windows and relay connections.
+
 ## [1.10.4] - 2026-10-31
 
 ### Changed
