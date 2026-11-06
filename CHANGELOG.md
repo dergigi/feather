@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Added
+- Blog interview about long-press gestures, one-tap defaults and discovering shortcuts, with the shared interactive video-controls demo.
+
 ## [1.10.5] - 2026-11-06
 
 ### Fixed
