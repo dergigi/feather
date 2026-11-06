@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<title>A little more behind a long press — Feather</title>
+<defs>
+  <radialGradient id="glow"><stop stop-color="#234252"/><stop offset="1" stop-color="#0e171c"/></radialGradient>
+</defs>
+<rect width="1200" height="630" fill="#0e171c"/>
+<ellipse cx="940" cy="315" rx="310" ry="340" fill="url(#glow)"/>
+<g font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="72" letter-spacing="-2">
+<text x="64" y="206" fill="#edf5f9">A little more</text>
+<text x="64" y="294" fill="#edf5f9">behind a</text>
+<text x="64" y="382" fill="#79c4f2">long press</text>
+</g>
+<text x="67" y="460" font-family="Arial, Helvetica, sans-serif" font-size="25" fill="#b4cad5">Feather: Nostr with nothing in the way.</text>
+<!-- An illustrative amount picker, with custom amount and comment in the last slots. -->
+<rect x="741" y="102" width="370" height="297" rx="34" fill="#080f13" opacity=".5"/>
+<rect x="733" y="94" width="370" height="297" rx="34" fill="#1b2b35" stroke="#304752" stroke-width="2"/>
+<g fill="#263d49">
+<circle cx="804" cy="150" r="37"/><circle cx="918" cy="150" r="37"/><circle cx="1032" cy="150" r="37"/>
+<circle cx="804" cy="243" r="37"/><circle cx="918" cy="243" r="37"/><circle cx="1032" cy="243" r="37"/>
+<circle cx="804" cy="336" r="37"/><circle cx="918" cy="336" r="37"/><circle cx="1032" cy="336" r="37"/>
+</g>
+<circle cx="804" cy="150" r="37" fill="#79c4f2"/>
+<g font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" text-anchor="middle" fill="#dceaf0">
+<text x="804" y="159" fill="#10202a">21</text><text x="918" y="159">42</text><text x="1032" y="159">100</text>
+<text x="804" y="252">210</text><text x="918" y="252">420</text><text x="1032" y="252">1k</text>
+<text x="804" y="345">2.1k</text>
+</g>
+<g stroke="#79c4f2" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+<path d="M905 336h26m-13-13v26"/>
+<path d="M1017 323h30v23h-20l-10 8z"/>
+</g>
+<path d="m1034 327-7 10h6l-3 7 9-11h-6z" fill="#79c4f2"/>
+<circle cx="918" cy="486" r="62" stroke="#345363" stroke-width="2" fill="#1b2b35"/>
+<circle cx="918" cy="486" r="71" stroke="#79c4f2" stroke-width="3" stroke-dasharray="320 126" fill="none" transform="rotate(-90 918 486)"/>
+<path d="m929 450-34 43h22l-12 30 37-46h-24z" fill="#79c4f2"/>
+<path d="M918 415v-13" stroke="#79c4f2" stroke-width="2" stroke-linecap="round"/>
+</svg>
