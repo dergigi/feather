@@ -2127,3 +2127,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `c971e075ece55c92f639912d47958d04f79202a5f910e7ef49530d01cf96f0c6`; 16,437,865 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
 - Zapstore release `72a4bb2b8720cdc7cf9b361a9ff6a2beec84ee7da22059ba9e38a58042c676bf` references asset `a85f6b71d9a2b326fd4700fbf60ab0f229f2bbeba926c81926681e2142815394`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
 - Compact article previews now apply throughout the app, including embedded links. Recipe previews and full reader covers retain their design. Device review remains manual.
+
+## 2026-11-06 — 1.10.5 release
+
+- Release source/tag `bc94ba8134b9e16af847ed75ebdc77879e2a3afe`; versionCode 238.
+- Signed release build passed in 1m 27s. No tests or emulators run. Package/version and expected signing certificate verified; mapping archived.
+- APK SHA-256 `c8f9e6773d7d473c303fc82c71d2ac297d78eaa145d7bfc3dc1c9f899abcc1db`; 16,437,865 bytes. GitHub asset digest matches; SHA256SUMS uploaded. Both GRASP release tags verified.
+- Zapstore release `3dd41be591da48dbd04028add12f6b9beebfae28996260887af0a9d231ba37d5` references asset `f39d7aa3e52a1481f4d13546a3fc2d4c7ede0d4c2e7ff55f025f947747464420`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
+- Removed follow-list truncation from discovery, display and pagination; relay author filters use batches of 500. Device review remains manual.
+- Issue `a2116549e252241bfededcbeba7851b9c3cb7e586a7f7225e51dc14bfa6077b3` was open and is now resolved; signed status accepted by nine relays and confirmed in ngit.
