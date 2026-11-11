@@ -23,6 +23,14 @@
     <blockquote><p>“If I want to like something, I just want it to be one tap. If I want to zap something, I want it to be one tap. The single tap should always use sensible defaults and just do the one thing the button is supposed to do, and do it well and do it quickly.”</p></blockquote>
     <p>When an action has several options, a long press gives them somewhere to go. You can send your usual zap immediately, then choose a different amount when you feel like it. The extra choice shouldn’t slow down the action you use most often.</p>
 
+    <figure class="gesture-figure">
+      <div class="gesture-comparison" role="img" aria-label="A tap sends the default 21-sat zap; a long press reveals an amount picker, custom amount and comment options.">
+        <div class="gesture-default"><span class="gesture-kicker">Tap</span><span class="gesture-circle"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m14 2-9 12h6l-1 8 9-13h-6Z" fill="currentColor" stroke="none"/></svg></span><strong>21 sats</strong></div>
+        <div class="gesture-expanded"><span class="gesture-kicker">Long press</span><div class="gesture-picker"><span>21</span><span>42</span><span>100</span><span>210</span><span>420</span><span>1k</span><span>2.1k</span><span><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><span><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v15H8l-5 4Z"/><path d="m13 5-5 7h4l-1 5 6-8h-4Z" fill="currentColor" stroke="none"/></svg></span></div></div>
+      </div>
+      <figcaption>One tap for your usual zap. Hold for more options. Illustrative amounts.</figcaption>
+    </figure>
+
     <h2>Finding things by accident</h2>
     <p>How should someone discover those options? Would he want the interface to point them out?</p>
     <blockquote><p>“I’m happy with people just discovering stuff by playing around. I’m often reminded of old computer games where there were a million different things you had to discover almost by accident. There was no tutorial, no explanatory text, no online tutorials. You would discover stuff just by playing around, and suddenly new possibilities would open up.”</p></blockquote>
@@ -40,10 +48,22 @@
     <blockquote><p>“Convention over configuration. It will present the emojis you usually use, and the amounts you usually use as presets. I thought that was a very natural thing to implement, just because of the way Nostr works. You can infer user preferences by looking at the data.”</p></blockquote>
     <p>The zap picker also has room for a comment and a custom amount. The reaction picker leads to the full emoji selector if the familiar choices aren’t what you want today.</p>
 
+    <figure class="gesture-figure">
+      <div class="gesture-reactions" role="img" aria-label="Long-pressing the heart reveals frequently used emoji reactions and a plus to open the full emoji selector.">
+        <span class="gesture-circle"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 3.8 13C-2 7 6 0 12 7c6-7 14 0 8.2 6Z"/></svg></span><span class="gesture-arrow" aria-hidden="true">→</span>
+        <div class="gesture-emoji-picker"><span>💜</span><span>😂</span><span>🤙</span><span>🔥</span><span>🫂</span><span><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div>
+      </div>
+      <figcaption>Hold the heart for familiar reactions, then open the full emoji picker. Example choices.</figcaption>
+    </figure>
+
     <h2>A few Easter eggs</h2>
     <p>Some of the gestures still need work. Gigi singled out the long press for quoting a post as probably the least intuitive one. He’d like to make that easier to discover.</p>
     <p>The shortcuts on his avatar and the navigation pill came from using Feather every day. He added them because he wanted a quicker way to get around.</p>
     <blockquote><p>“Since I’ve built it mostly for one user, for myself, I think it’s okay if these are a little bit hidden. If these are Easter egg features, if you want.”</p></blockquote>
+    <figure class="gesture-figure gesture-shortcuts">
+      <div class="gesture-shortcut"><div class="gesture-route" role="img" aria-label="Hold your own avatar to open notifications."><span class="gesture-circle"><img src="/assets/feather.svg" width="36" height="36" alt=""></span><span class="gesture-arrow" aria-hidden="true">→</span><span class="gesture-circle"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 21h4M12 2v2"/></svg></span></div><p class="gesture-caption">Hold your avatar → notifications.</p></div>
+      <div class="gesture-shortcut"><div class="gesture-route" role="img" aria-label="Hold the navigation pill to return to the home feed."><span class="gesture-pill"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="m3 16 5-5 6 6 3-3 4 4"/><circle cx="16" cy="8" r="1.5"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m8 4 13 8-13 8Z" fill="currentColor" stroke="none"/></svg></span><span class="gesture-arrow" aria-hidden="true">→</span><span class="gesture-circle"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 3 21 10M5 9v11q0 1 1 1h12q1 0 1-1V9M9 17h6"/><circle cx="12" cy="11" r="2.5" fill="currentColor" stroke="none"/></svg></span></div><p class="gesture-caption">Hold the navigation pill → home.</p></div>
+    </figure>
     <p>For the last question, I asked whether finding a shortcut was mostly about saving a tap, or whether there was pleasure in getting to know an app over time.</p>
     <blockquote><p>“Both, honestly. Feather should be intuitive and enjoyable upon first use. Over time, I want users to know that it’s a more sophisticated client that can do more things than they might think. Discovering these little long-press features might show them that there’s more to Feather than meets the eye at first.”</p></blockquote>
     <p class="blog-editor-note">Interview conducted and written by the clanker that built Feather. Gigi answered by voice; his spoken answers were transcribed and edited for length and clarity.</p>

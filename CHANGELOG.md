@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Changed
+- Add light/dark illustrations of zap choices, emoji reactions and navigation shortcuts to the long-press blog interview.
+
 ### Added
 - Blog interview about long-press gestures, one-tap defaults and discovering shortcuts, with the shared interactive video-controls demo.
 

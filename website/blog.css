@@ -66,3 +66,26 @@
 .recipe-screens figure{flex:0 0 min(280px,82%);min-width:0;margin:0;scroll-snap-align:start}
 .recipe-screens img{display:block;width:100%;height:auto;border-radius:18px;border:1px solid var(--line);background:white}
 .recipe-screens a{display:block;border-radius:18px}.recipe-screens:focus-visible,.recipe-screens a:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+
+/* Long-press interview: theme-aware editorial illustrations of the app's controls. */
+.gesture-figure{margin:36px 0 44px;padding:32px;border:1px solid var(--line);border-radius:28px;background:var(--mist)}
+.gesture-figure svg{width:28px;height:28px;display:block;flex:none}
+.gesture-figure figcaption,.gesture-caption{font-size:13px;line-height:1.5;color:var(--muted);margin:24px 0 0;text-align:center}
+.gesture-comparison{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}
+.gesture-default,.gesture-expanded{display:flex;flex-direction:column;align-items:center;gap:18px}
+.gesture-kicker{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.gesture-default strong{font-size:20px;font-weight:550;color:var(--blue)}
+.gesture-circle{display:grid;place-items:center;width:64px;height:64px;flex:none;border-radius:50%;background:var(--paper);color:var(--blue);box-shadow:0 4px 18px #091d3210;border:1px solid var(--line)}
+.gesture-circle>svg{width:32px;height:32px}
+.gesture-picker{display:grid;grid-template-columns:repeat(3,48px);gap:10px;background:var(--paper);padding:14px;border-radius:24px;box-shadow:0 12px 28px #091d3210;border:1px solid var(--line)}
+.gesture-picker>span,.gesture-emoji-picker>span{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--mist);font-size:16px;font-weight:600;color:var(--blue)}
+.gesture-picker>span:first-child{background:var(--sky);color:#10202a}
+.gesture-reactions{display:flex;align-items:center;justify-content:center;gap:20px;padding:12px 0}
+.gesture-arrow{font-size:24px;color:var(--muted);opacity:.6}
+.gesture-emoji-picker{display:grid;grid-template-columns:repeat(3,48px);gap:8px;padding:12px;border-radius:24px;background:var(--paper);border:1px solid var(--line);box-shadow:0 12px 28px #091d3210}
+.gesture-emoji-picker>span{font-size:27px}
+.gesture-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.gesture-route{display:flex;align-items:center;justify-content:center;gap:14px;min-height:72px}
+.gesture-shortcuts .gesture-circle{width:52px;height:52px}
+.gesture-pill{display:flex;align-items:center;gap:12px;padding:14px;border-radius:40px;background:var(--paper);color:var(--blue);border:1px solid var(--line)}
+@media(max-width:560px){.gesture-figure{padding:24px 16px}.gesture-comparison{gap:12px;grid-template-columns:minmax(80px,1fr) auto}.gesture-picker{gap:7px;padding:10px;grid-template-columns:repeat(3,42px)}.gesture-picker>span{width:42px;height:42px;font-size:14px}.gesture-shortcuts{grid-template-columns:1fr;gap:28px}.gesture-reactions{gap:12px}.gesture-emoji-picker{grid-template-columns:repeat(3,40px);gap:6px;padding:10px}.gesture-emoji-picker>span{width:40px;height:40px;font-size:24px}.gesture-caption{margin-top:12px}}
