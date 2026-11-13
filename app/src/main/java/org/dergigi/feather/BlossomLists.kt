@@ -29,28 +29,50 @@ internal fun blossomListTags(base: Event?, urls: List<String>): Array<Array<Stri
     addAll(base?.tags.orEmpty().filter { it.firstOrNull() != "server" })
 }.toTypedArray()
 
-/** An offline relay or an unwitnessed cached winner is not evidence of an empty/current list. */
-internal fun requireBlossomReadCompletion(routes: List<String>, required: List<String>, completed: Set<String>, hasList: Boolean, witnessed: Set<String>) {
-    check(completed.containsAll(required) && completed.isNotEmpty()) {
-        "Could not confirm the latest list on every required account relay. No update sent; retry when connected."
+/** Coverage describes a bounded read, never a guarantee of global absence or freshness. */
+internal data class BlossomReadCoverage(val routes: List<String>, val completed: Set<String>, val witnessedNewest: Boolean) {
+    init {
+        check(completed.isNotEmpty() && completed.all { it in routes }) {
+            "No relay completed the read. Your cached list is retained; retry when connected."
+        }
     }
-    check(hasList || completed.size == routes.size) { "Could not confirm an absent list. No update sent." }
-    check(!hasList || witnessed.any { it in completed }) { "Relays did not return the latest known list. No update sent." }
+    val incomplete: Boolean get() = completed.size != routes.size || !witnessedNewest
+}
+
+internal fun newestBlossomEvent(known: Event?, candidate: Event?): Event? =
+    if (candidate != null && Protocol.isNewer(candidate, known)) candidate else known
+
+internal fun requireBlossomPublishSnapshot(base: BlossomLists.Snapshot, fresh: BlossomLists.Snapshot, allowIncomplete: Boolean) {
+    check(base.owner == fresh.owner && base.event?.id == fresh.event?.id && base.relayId == fresh.relayId) {
+        "Account lists changed. Close and reopen to review them."
+    }
+    check(!fresh.incomplete || allowIncomplete) {
+        "Relay coverage is now incomplete. Close and reopen to review the warning before publishing."
+    }
 }
 
 internal class BlossomLists(private val repo: FeatherRepository, private val requests: SignerRequests) {
-    data class Snapshot(val owner: String, val event: Event?, val routes: List<String>, val relayId: String?) {
+    data class Snapshot(val owner: String, val event: Event?, val routes: List<String>, val relayId: String?,
+        val relayCoverage: BlossomReadCoverage, val listCoverage: BlossomReadCoverage) {
+        val incomplete: Boolean get() = relayCoverage.incomplete || listCoverage.incomplete
+        val warning: String? get() = if (!incomplete) null else
+            "Incomplete relay coverage (account relays ${relayCoverage.completed.size}/${relayCoverage.routes.size}, " +
+                "server list ${listCoverage.completed.size}/${listCoverage.routes.size}). " +
+                if (event == null) "No list was found, but offline relays may have one. Publishing creates or replaces your public list."
+                else "Using the newest verified list known to Feather, including cache. Offline relays may have a newer list; publishing may replace unseen changes."
         val urls: List<String> get() = event?.tags.orEmpty().filter { it.firstOrNull() == "server" }.map { it.getOrNull(1).orEmpty() }
     }
     private val edits = Mutex()
     private val queries = ProfileRelayQuery()
     private fun current(owner: String) = check(repo.state.value.publicKey == owner) { "Account changed. Reopen Blossom settings." }
 
-    private suspend fun discover(owner: String, kind: Int, routes: List<String>, required: List<String> = routes): Event? {
+    private data class Discovery(val event: Event?, val coverage: BlossomReadCoverage)
+
+    private suspend fun discover(owner: String, kind: Int, routes: List<String>): Discovery {
         require(routes.isNotEmpty() && routes.size <= 32) { "Too many account relays to safely refresh this list." }
         repo.awaitListEditingForeground()
         current(owner)
-        var latest = repo.followEvent(owner, kind)
+        var latest = repo.followEvent(owner, kind)?.takeIf { it.pubKey == owner && it.kind == kind && it.verify() }
         val lock = Mutex()
         val witnessed = mutableSetOf<String>()
         val completed = withTimeout(60_000) {
@@ -58,8 +80,9 @@ internal class BlossomLists(private val repo: FeatherRepository, private val req
                 require(event.kind == kind && event.pubKey == owner && event.verify() && event.tags.size <= 5000 &&
                     event.content.length <= 32768 && event.createdAt <= System.currentTimeMillis() / 1000 + 600) { "Invalid account list response" }
                 current(owner)
+                // A verified event remains evidence even if this socket never reaches EOSE.
                 lock.withLock {
-                    if (Protocol.isNewer(event, latest)) { latest = event; witnessed.clear() }
+                    if (newestBlossomEvent(latest, event)?.id != latest?.id) { latest = event; witnessed.clear() }
                     if (event.id == latest?.id) witnessed.add(relay)
                 }
                 repo.cacheFollowEvent(event, relay)
@@ -67,11 +90,10 @@ internal class BlossomLists(private val repo: FeatherRepository, private val req
             }
         }
         current(owner)
-        val cached = repo.followEvent(owner, kind)
+        val cached = repo.followEvent(owner, kind)?.takeIf { it.pubKey == owner && it.kind == kind && it.verify() }
         return lock.withLock {
-            if (cached != null && Protocol.isNewer(cached, latest)) { latest = cached; witnessed.clear() }
-            requireBlossomReadCompletion(routes, required, completed, latest != null, witnessed)
-            latest
+            if (newestBlossomEvent(latest, cached)?.id != latest?.id) { latest = cached; witnessed.clear() }
+            Discovery(latest, BlossomReadCoverage(routes, completed, latest == null || witnessed.any { it in completed }))
         }
     }
 
@@ -81,25 +103,27 @@ internal class BlossomLists(private val repo: FeatherRepository, private val req
         val seeds = RelayDefaults.seeds.take(3)
         val authoritative = known?.write.orEmpty()
         val relayRoutes = (authoritative + seeds).distinct()
-        val relayEvent = discover(owner, 10002, relayRoutes, authoritative.ifEmpty { seeds })
+        val relayRead = discover(owner, 10002, relayRoutes)
+        val relayEvent = relayRead.event
         val relays = relayEvent?.let(Outbox::parse)
-        // Arbitrary seed outages must not block accounts with advertised write relays.
-        val routes = relays?.write.orEmpty().ifEmpty { seeds }.distinct()
-        val event = discover(owner, 10063, routes)
+        // Query every bounded route, but offline peers do not veto usable responses.
+        val routes = (relays?.write.orEmpty() + seeds).distinct()
+        val listRead = discover(owner, 10063, routes)
+        val event = listRead.event
         require(event?.tags.orEmpty().count { it.firstOrNull() == "server" } <= 16) {
             "Your list has more than 16 servers. Use another client to edit it; Feather will not truncate it."
         }
-        Snapshot(owner, event, routes, relayEvent?.id)
+        Snapshot(owner, event, routes, relayEvent?.id, relayRead.coverage, listRead.coverage)
     }
 
-    suspend fun publish(base: Snapshot, values: List<String>, identity: NostrSignerExternal): Snapshot = withContext(Dispatchers.IO) {
+    suspend fun publish(base: Snapshot, values: List<String>, identity: NostrSignerExternal, allowIncomplete: Boolean = false): Snapshot = withContext(Dispatchers.IO) {
         edits.withLock {
             val owner = base.owner
             current(owner)
             require(identity.pubKey == owner)
             val urls = blossomListUrls(values)
             val fresh = load(owner)
-            check(fresh.event?.id == base.event?.id) { "Your Blossom list changed in another client. Close and reopen to review it." }
+            requireBlossomPublishSnapshot(base, fresh, allowIncomplete)
             val tags = blossomListTags(fresh.event, urls)
             require(tags.size <= 5000) { "Server list is too large." }
             val timestamp = maxOf(System.currentTimeMillis() / 1000, (fresh.event?.createdAt ?: 0) + 1)
@@ -112,7 +136,7 @@ internal class BlossomLists(private val repo: FeatherRepository, private val req
                 signed.tags.contentDeepEquals(tags) && signed.verify()) { "Signer returned an invalid Blossom list." }
             // Amber may remain open while another client changes the account's lists.
             val after = load(owner)
-            check(after.event?.id == fresh.event?.id && after.relayId == fresh.relayId) { "Account lists changed while signing. Reopen to review them." }
+            requireBlossomPublishSnapshot(fresh, after, allowIncomplete)
             currentCoroutineContext().ensureActive()
             current(owner)
             check(repo.publishFollowEvent(signed, after.routes, fresh.event?.id, after.relayId)) {
@@ -121,7 +145,7 @@ internal class BlossomLists(private val repo: FeatherRepository, private val req
             current(owner)
             val saved = repo.followEvent(owner, 10063)
             check(!Protocol.isNewer(signed, saved)) { "Publication confirmed, but the local cache could not be updated. Reopen to refresh." }
-            Snapshot(owner, saved, after.routes, after.relayId)
+            after.copy(event = saved)
         }
     }
 }

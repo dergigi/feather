@@ -42,7 +42,8 @@ internal fun BlossomSettings(vm: FeatherViewModel, owner: String, onDismiss: () 
     if (confirmPublish) AlertDialog(
         onDismissRequest = { confirmPublish = false },
         title = { Text("Publish Blossom servers?") },
-        text = { Text("Replace your public server list with these ${urls.size} servers in this order? Other clients can read this list. Your signer will ask for approval.") },
+        text = { Text("Replace your public server list with these ${urls.size} servers in this order? Other clients can read this list. Your signer will ask for approval." +
+            (snapshot?.warning?.let { "\n\n$it\n\nConfirm publication despite this uncertainty?" } ?: "")) },
         confirmButton = { IconButton(onClick = {
             confirmPublish = false
             val base = snapshot ?: return@IconButton
@@ -50,7 +51,7 @@ internal fun BlossomSettings(vm: FeatherViewModel, owner: String, onDismiss: () 
             busy = true; error = null; confirmed = false
             publishJob = scope.launch {
                 try {
-                    val result = vm.blossomLists.publish(base, urls, identity)
+                    val result = vm.blossomLists.publish(base, urls, identity, allowIncomplete = base.incomplete)
                     snapshot = result; urls = result.urls; confirmed = true
                 } catch (e: TimeoutCancellationException) {
                     error = "Signing or discovery timed out. Reopen to check the latest list before retrying."
@@ -72,6 +73,7 @@ internal fun BlossomSettings(vm: FeatherViewModel, owner: String, onDismiss: () 
             }
             Text("Media uploads try the first server first. Use full HTTPS URLs; at least one server is required. Changes stay here until you publish.", style = MaterialTheme.typography.bodyMedium)
             if (busy) CircularProgressIndicator(Modifier.size(24.dp))
+            snapshot?.warning?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (snapshot != null) {
                 urls.forEachIndexed { index, url ->
                     OutlinedTextField(value = url, onValueChange = { value ->

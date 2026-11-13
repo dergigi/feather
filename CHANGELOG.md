@@ -5,6 +5,7 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 ## [Unreleased]
 
 ### Changed
+- Allow Blossom server editing after a usable relay response when other relays are offline, retaining the newest verified cached list and requiring informed confirmation for incomplete coverage.
 - Add light/dark illustrations of zap choices, emoji reactions and navigation shortcuts to the long-press blog interview.
 
 ### Added
