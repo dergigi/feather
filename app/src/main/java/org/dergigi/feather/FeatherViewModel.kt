@@ -86,6 +86,7 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
     internal val firstFollow = MutableStateFlow<Pair<String, String>?>(null)
     private val followJobs = mutableMapOf<String, Job>()
     private val followQueueMutex = Mutex()
+    internal val blossomLists by lazy { BlossomLists(repo, signerRequests) }
     private val followLists by lazy { FollowLists(repo, signerRequests) }
     internal fun changeHashtagFollow(target: String, follow: Boolean, allowCreate: Boolean = false) {
         val tag = normalizeFollowedTag(target) ?: return

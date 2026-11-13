@@ -1812,7 +1812,7 @@ class FeatherRepository(context: Context) {
     }
 
     internal suspend fun cacheFollowEvent(event: Event, relay: String? = null) {
-        require(event.kind in listOf(3, 10002, 10015, 10000, 30000) && event.pubKey == state.value.publicKey)
+        require(event.kind in listOf(3, 10002, 10015, 10000, 30000, 10063) && event.pubKey == state.value.publicKey)
         require(event.kind != 30000 || event.tagValue("d") == "mute")
         accept(event, seenAt = relay)
         if (event.kind == 3) {
@@ -1836,7 +1836,7 @@ class FeatherRepository(context: Context) {
         // wait and refresh again instead of publishing an aging snapshot on resume.
         if (!foregroundActive.value) return@withContext false
         check(state.value.publicKey == event.pubKey) { "Account changed" }
-        require(event.kind in listOf(3, 10015, 10000))
+        require(event.kind in listOf(3, 10015, 10000, 10063))
         check(followEvent(event.pubKey, event.kind)?.id == baseline && followEvent(event.pubKey, 10002)?.id == relayBaseline) {
             "Account lists changed. Tap again to retry safely."
         }

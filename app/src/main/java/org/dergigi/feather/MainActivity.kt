@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
@@ -1708,6 +1709,11 @@ internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Settings(vm: FeatherViewModel, state: FeedState, onChange: (Boolean?, Boolean?) -> Unit, onLogout: () -> Unit, onWallet: () -> Unit, onIssue: (IssueType) -> Unit, onIssues: () -> Unit, onFeather: () -> Unit, onProfile: (String) -> Unit, modifier: Modifier) {
+    var blossomOwner by remember { mutableStateOf<String?>(null) }
+    if (blossomOwner != null && blossomOwner == state.publicKey) key(blossomOwner) {
+        BlossomSettings(vm, blossomOwner!!, onDismiss = { blossomOwner = null })
+    }
+    LaunchedEffect(state.publicKey) { blossomOwner = null }
     var showMutedAccounts by rememberSaveable(state.publicKey) { mutableStateOf(false) }
     if (showMutedAccounts) MutedAccountsSheet(vm, onDismiss = { showMutedAccounts = false }, onProfile = {
         showMutedAccounts = false; onProfile(it)
@@ -1790,6 +1796,9 @@ private fun Settings(vm: FeatherViewModel, state: FeedState, onChange: (Boolean?
                 AccountAvatar(profile?.name ?: FeatherRepository.shortKey(key), 40, profile?.picture)
                 Text(profile?.name ?: FeatherRepository.shortKey(key), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FilledTonalIconButton(onClick = { blossomOwner = key }, modifier = Modifier.size(RoundControlSize)) {
+                    Icon(Icons.AutoMirrored.Filled.List, "Blossom servers")
+                }
                 FilledTonalIconButton(onClick = onWallet, modifier = Modifier.size(RoundControlSize)) { Icon(painterResource(R.drawable.wallet), stringResource(R.string.ui_wallet_21_sats_per_zap)) }
                 FilledTonalIconButton(onClick = onLogout, modifier = Modifier.size(RoundControlSize)) { Icon(Icons.AutoMirrored.Filled.ExitToApp, stringResource(R.string.ui_log_out)) }
             }

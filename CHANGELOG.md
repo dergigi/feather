@@ -8,6 +8,7 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 - Add light/dark illustrations of zap choices, emoji reactions and navigation shortcuts to the long-press blog interview.
 
 ### Added
+- Native account settings to review, edit, reorder and explicitly publish public Blossom server lists through the connected Android signer. Validate HTTPS URLs, refresh account lists before replacement and require relay confirmation.
 - Blog interview about long-press gestures, one-tap defaults and discovering shortcuts, with the shared interactive video-controls demo.
 
 ## [1.10.5] - 2026-11-06
