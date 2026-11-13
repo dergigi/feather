@@ -5,6 +5,7 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 ## [Unreleased]
 
 ### Changed
+- Refine Japanese UI translations, retaining clear public-report wording and tap/hold reaction accessibility descriptions.
 - Add light/dark illustrations of zap choices, emoji reactions and navigation shortcuts to the long-press blog interview.
 
 ### Added

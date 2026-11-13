@@ -77,8 +77,8 @@
     <string name="ui_previous_image">前の画像</string>
     <string name="ui_public_message">公開メッセージ</string>
     <string name="ui_publish_post">投稿を公開</string>
-    <string name="ui_publish_public_issue">課題を公開</string>
-    <string name="ui_react_hold_to_choose_an_emoji">長押しでリアクションの絵文字を選択</string>
+    <string name="ui_publish_public_issue">報告を公開</string>
+    <string name="ui_react_hold_to_choose_an_emoji">タップでリアクション、長押しで絵文字を選択</string>
     <string name="ui_remove_attachment_from_post">添付ファイルを削除</string>
     <string name="ui_remove_wallet_connection">ウォレット接続を削除</string>
     <string name="ui_report_a_bug">不具合を報告</string>
@@ -115,8 +115,8 @@
     <string name="ui_zap_from_sender_to_recipient">送信者から受信者へのZap</string>
     <string name="ui_reply">返信</string>
     <string name="ui_shorter_quote">返信に引用する文章を短くしてください</string>
-    <string name="ui_public_issue_author">送信される報告者の情報: %1$s</string>
-    <string name="ui_public_issue_sign_in">報告を送信するにはログイン</string>
+    <string name="ui_public_issue_author">公開される報告 · %1$s</string>
+    <string name="ui_public_issue_sign_in">公開される報告 · 送信するにはログイン</string>
     <string name="ui_rewind">10秒戻る</string>
     <string name="ui_forward">30秒進む</string>
     <string name="ui_change_speed">再生速度を変更: %1$s</string>
