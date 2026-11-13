@@ -2136,3 +2136,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `3dd41be591da48dbd04028add12f6b9beebfae28996260887af0a9d231ba37d5` references asset `f39d7aa3e52a1481f4d13546a3fc2d4c7ede0d4c2e7ff55f025f947747464420`. Catalog versionCode, certificate, size and hash match; complete CDN download verified. No website deployment.
 - Removed follow-list truncation from discovery, display and pagination; relay author filters use batches of 500. Device review remains manual.
 - Issue `a2116549e252241bfededcbeba7851b9c3cb7e586a7f7225e51dc14bfa6077b3` was open and is now resolved; signed status accepted by nine relays and confirmed in ngit.
+
+## 2026-11-13 — 1.10.6 release
+
+- Release source/tag `cf4601288311c780411ea78e8d4ef87df0390fc4`; versionCode 239.
+- Signed optimized release build passed in 1m 23s. Package/version and expected signing certificate verified; mapping archived locally. No tests or emulators run.
+- APK SHA-256 `c5fb747b208864c649dc84311adf9f4fa973ade1cf800e441432392005bc38be`; 16,437,837 bytes. GitHub asset digest and downloaded Zapstore CDN APK match. SHA256SUMS published; both GRASP release tags verified.
+- Zapstore release `2f55ec9013b36e82a31baed6be1c61e55f74d76c87952890d18b92f7322340c8` references asset `b486fc860e643d494eb27d6636317b5e0330ed07a0c770f4484c772529571968`. Catalog versionCode, size, checksum and certificate match.
+- Japanese translation refinements merged with public-report and tap/hold accessibility wording retained. Bookmark implementation remains stashed and excluded. No website deployment.
