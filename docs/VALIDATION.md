@@ -2177,3 +2177,13 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Updated the publishing wrapper to preserve original image bytes; republished 1.10.9 metadata only with `--no-compress --overwrite-release --overwrite-app-event`. No APK build, new version, tests, emulator, or website deployment.
 - Publication succeeded. Application `2899effb256225024993b913bde892580c9727169b18912df4e35067c43cffdd` references the original PNG; CDN download matches the repository file exactly.
 - Waited for catalog epoch 1087. It includes the PNG event but still embeds the old purple image byte for byte. The format compatibility change did not fix the upstream artifact; evidence updated in `docs/ZAPSTORE_ICON.md`.
+
+
+## 2026-11-14 — 1.11.0 release
+
+- Source/tag `8a049f72a453476fa0c42ee78b9f2d253e119f87`; versionCode 243. Custom messages now collapse into a 56dp info/warning button opposite the compose FAB, with animated expansion, bounded scrollable text, full-detail copying, draft recovery and icon-only unfollow undo. Expanded messages pause dismissal; collapse restarts the accessible six-second timeout.
+- Final signed optimized build passed in 1m 25s after bundling the undo vector. Signature/certificate and extracted launcher pixels verified. Mapping archived locally. No tests or emulators run; visual/device review remains manual.
+- APK SHA-256 `b747c237e7b7f9b8576b94e2d57a5995e6883bef66f4a3d10437df751a30d448`; 16,456,557 bytes. GitHub asset digest and complete Zapstore CDN download match. Both GRASP tags and GitHub tag verified. GitHub mirror pushed directly with its configured CLI credentials after ngit's GitHub authentication failed.
+- Zapstore release `42103f561637199962366c39d75b4256f55ce8f72aa4d9598fb4215e8398aedf` references asset `d610839963a8b0715ab8f83c7407e1568d9e0f7c52c3f0540070bc30c04625ca`; retrieved both from the relay and verified version, size, checksum and certificate. Public app page shows 1.11.0.
+- No website deployment. The separate Zapstore catalog artwork issue is not claimed fixed.
+- Catalog epoch 1102 includes the release. Its processed icon still hashes to `3e6ed5fd4354fb44a3de9964864f3dac31af4ab637c6c83d1590549d619247ac`, the same incorrect purple artwork; upstream icon issue persists.
