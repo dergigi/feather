@@ -1,21 +1,16 @@
 package org.dergigi.feather
 
 import android.content.Context
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
@@ -55,33 +50,18 @@ internal class PhotoLayoutPreference(context: Context) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PhotoLayoutSetting() {
     val preference = (LocalContext.current.applicationContext as FeatherApplication).photoLayout
     val selected by preference.layout.collectAsStateWithLifecycle()
-    val title = stringResource(R.string.ui_photo_layout)
+    val title = stringResource(R.string.ui_photo_carousel)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-            tooltip = { PlainTooltip { Text(title) } }, state = rememberTooltipState()) {
-            Icon(painterResource(R.drawable.photo_collection), title,
-                Modifier.padding(vertical = 12.dp), tint = MaterialTheme.colorScheme.primary)
-        }
-        Spacer(Modifier.weight(1f))
-        Row(Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp).selectableGroup()) {
-            listOf(PhotoLayout.CAROUSEL, PhotoLayout.STACKED).forEach { layout ->
-                val label = stringResource(if (layout == PhotoLayout.CAROUSEL) R.string.ui_photo_carousel else R.string.ui_photo_stacked)
-                TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                    tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState()) {
-                    Box(Modifier.size(48.dp).clip(CircleShape)
-                        .background(if (selected == layout) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-                        .selectable(selected = selected == layout, role = Role.RadioButton, onClick = { preference.select(layout) }),
-                        contentAlignment = Alignment.Center) {
-                        Icon(painterResource(if (layout == PhotoLayout.CAROUSEL) R.drawable.photo_carousel else R.drawable.photo_stacked),
-                            label, tint = if (selected == layout) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
+        Icon(painterResource(R.drawable.photo_carousel), null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(16.dp))
+        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface)
+        Switch(checked = selected == PhotoLayout.CAROUSEL,
+            onCheckedChange = { enabled -> preference.select(if (enabled) PhotoLayout.CAROUSEL else PhotoLayout.STACKED) },
+            modifier = Modifier.semantics { contentDescription = title })
     }
 }

@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-11-14
+
+### Changed
+- Simplify the photo layout setting to a Carousel icon, label, and on/off switch. Default to off (stacked photos) and retain existing saved choices.
+
 ## [1.14.0] - 2026-11-14
 
 ### Added
