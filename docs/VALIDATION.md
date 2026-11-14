@@ -2237,3 +2237,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `22f088b6ec2ed9f136f7dbae7b8090516e6c6ecd47e20244ebf1ebf76e46a035` references asset `ed3903b07c2ae49e17fc1a239cd05151097ad32232f6c598726f8d881acc5ed3`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.13.0.
 - No website deployment.
 - Catalog epoch 1122 includes 1.13.0 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## 2026-11-14 — 1.14.0 release
+
+- Source/tag `88640e17b50b108b849a7e4d3c392f97b70f7597`; versionCode 249. Photo layout offers a collection icon and icon-only Carousel/Stacked radio choices with tooltips. Stacked is the default. A device-wide preference updates immediately and persists on IO with a conflated write queue; stacked mode preserves the original media/quote order.
+- Signed optimized build passed in 34s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Setting selection, restart persistence, tooltips and media behavior await manual device review.
+- APK SHA-256 `0d6a0f8cd934b1646590b90d0b4fbb2142bca376bfd6e2a5b2b003946f71e378`; 16,478,902 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `91869274b11b26f1e43927e8758d76d77d6653bc07f0ec6eb3ec278e9ada3f8b` references asset `e6029329b3b4e0a3ff7a6dc9d94304759f0ce2b9e4caf5d23905269179f97b4a`. Relay read-back verifies version, size, checksum and signing certificate. Public app page and catalog epoch 1124 include 1.14.0; corrected icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`. No website deployment.
+- After release, asked the Feather agent by NIP-17 to reply to the Multiple images request. Its public kind-1111 reply `2dba452014c2d58dd00e312bb9940c12f23770dec94997e041ec7985f935a1d3` explains both layouts and the default. Marked issue `73d061125c0670c3dc6ea33e186a7c9e1f52bc4bfda3c6bd89fd406a07e33350` resolved through ngit; status accepted by eight relays.
