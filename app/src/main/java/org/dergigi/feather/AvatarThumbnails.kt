@@ -1,6 +1,7 @@
 package org.dergigi.feather
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
@@ -24,7 +25,10 @@ class AvatarThumbnails(private val disk: DiskCache) : Interceptor {
     private var closed = false
     private val worker = scope.launch {
         for (write in queue) {
-            try { save(write.key, write.bitmap) }
+            try {
+                save(write.key, write.bitmap)
+                save(latestKey(write.key.substringBeforeLast(":avatar:")), write.bitmap)
+            }
             finally { synchronized(pending) { pending.remove(write.key) } }
         }
     }
@@ -45,6 +49,24 @@ class AvatarThumbnails(private val disk: DiskCache) : Interceptor {
         scope.cancel()
         worker.join() // Finish/abort an active editor before the shared disk cache closes.
         synchronized(pending) { pending.clear() }
+    }
+
+    private fun latestKey(url: String) = "$url:avatar:latest:thumbnail-256-v1"
+
+    /** A display-only fallback: it never prevents the normal weekly refresh. */
+    suspend fun cachedPlaceholder(url: String, week: Long): Bitmap? = withContext(Dispatchers.IO) {
+        // Also reuse thumbnails written before the stable fallback key was introduced.
+        val keys = listOf(latestKey(url)) + (0L..8L).map { "$url:avatar:${week - it}:thumbnail-256-v1" }
+        for (key in keys) {
+            ensureActive()
+            val bitmap = runCatching {
+                disk.openSnapshot(key)?.use { snapshot ->
+                    BitmapFactory.decodeFile(snapshot.data.toString())
+                }
+            }.getOrNull()
+            if (bitmap != null) return@withContext bitmap
+        }
+        null
     }
 
     override suspend fun intercept(chain: Interceptor.Chain): coil3.request.ImageResult {

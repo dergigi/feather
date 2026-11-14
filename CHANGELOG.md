@@ -4,6 +4,12 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.7] - 2026-11-14
+
+### Fixed
+- Ignore unrelated imeta media in ordinary notes while preserving metadata-based picture and video posts.
+- Keep cached avatars visible during weekly refreshes and download failures; retain small fallback thumbnails within the existing cache budget.
+
 ### Changed
 - Migrate Zapstore publishing to zsp 2, using the existing signing claim and repository-relative listing assets.
 

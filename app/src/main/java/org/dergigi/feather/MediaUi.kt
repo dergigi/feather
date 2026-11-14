@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
@@ -95,12 +97,20 @@ fun RemoteImage(url: String?, modifier: Modifier, description: String? = null, c
             .apply { widthPx?.let { size(Size(Dimension(it.coerceAtLeast(1)), Dimension.Undefined)) } }
             .build()
     }
+    val thumbnails = media.resources?.thumbnails
+    val cachedAvatar by produceState<android.graphics.Bitmap?>(null, safeUrl, avatar, week, thumbnails) {
+        value = null
+        if (avatar) value = thumbnails?.cachedPlaceholder(safeUrl, week)
+    }
     var decoded by remember(safeUrl) { mutableStateOf<coil3.Image?>(null) }
+    val retainedAvatar = if (avatar) (decoded as? coil3.BitmapImage)?.bitmap ?: cachedAvatar else null
+    val avatarPlaceholder = remember(retainedAvatar) { retainedAvatar?.let { BitmapPainter(it.asImageBitmap()) } }
     var visible by remember(safeUrl) { mutableStateOf(false) }
     val view = LocalView.current
     ImageAnimation(decoded, visible && media.active && media.playback?.fullscreen != true)
     key(safeUrl, media.active, retries) {
-        AsyncImage(model = request, imageLoader = loader, contentDescription = description, modifier = modifier.onGloballyPositioned {
+        AsyncImage(model = request, imageLoader = loader, contentDescription = description,
+            placeholder = avatarPlaceholder, error = avatarPlaceholder, modifier = modifier.onGloballyPositioned {
                 val bounds = it.boundsInWindow()
                 visible = bounds.bottom > 0 && bounds.top < view.height && bounds.right > 0 && bounds.left < view.width
             },
