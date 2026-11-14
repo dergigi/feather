@@ -2161,3 +2161,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore v2 release `09393adf05395513b16e35519eb5aa04864a08d4358998c992fcb8163593d862` references asset `e9e8c92c755311df1d2aed416cb397f22d8a959c494ffe8e07f5a336d80f990d`; public app page shows 1.10.8.
 - Reproduced incorrect purple icon with zsp APK extraction on 1.10.7. Added density-specific bitmap launcher resources generated from the existing feather vector. Visually verified zsp extraction from signed 1.10.8 produces the blue feather with white stem.
 - Remaining external issue: Zapstore's processed catalog icon still shows the purple bird, although the signed app event points to the correct blue icon and the current APK extracts correctly. Do not treat Android catalog presentation as verified. Upstream steroid caches icons by source URL (or "apk"), independently of the APK hash; a catalog artifact refresh may be required.
+
+## 2026-11-14 — 1.10.9 release
+
+- Release source/tag `69f0881302858bb71ed661a0c4960d8d01f04ba0`; versionCode 242.
+- Signed release build passed in 33s. Expected signing certificate verified; mapping archived. No tests or emulators run. No website deployment.
+- APK SHA-256 `39eaf837f4b3d7fb6aa1de3092612beba5fa0d7a0a7203f44e51a0c933f5ca1a`; 16,454,261 bytes. GitHub asset digest and complete Zapstore CDN download match. Both GRASP tags verified.
+- Zapstore release `633f793b04855f12f6efd0125dc9975551700d18c45703504c79bfd6eb11ea16` and asset `e7c737ba69a76ac324ceb5e403482db390c62a181f1dd2a654a40963114fd071` appear in catalog epoch 1079; public page shows 1.10.9.
+- Store icon regenerated from the same canonical vector as the launcher; the new published image is visually correct. Local-APK publication now checks zsp-extracted pixels against the expected launcher bitmap before signing/uploading.
+- Remaining upstream defect confirmed: epoch 1079 contains the new icon URL but embeds the same wrong purple image as epoch 1078. This is not merely an old client bundle. See [catalog evidence](ZAPSTORE_ICON.md); the previous cache-only explanation was not established.
