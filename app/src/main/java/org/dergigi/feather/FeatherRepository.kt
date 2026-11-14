@@ -1653,21 +1653,47 @@ class FeatherRepository(context: Context) {
         }
     }.flowOn(Dispatchers.IO)
 
+    private val zapProfileRequests = mutableMapOf<List<String>, Deferred<Map<String, Profile>>>()
+
+    /** Resolve kind-0 metadata before a new payment, independently of UI profile refresh. */
     internal suspend fun zapRecipientProfiles(note: Event): Map<String, Profile> = withContext(Dispatchers.IO) {
         ready.await()
         val splits = zapSplits(note)
-        val authors = splits.map { it.pubkey }
-        val cached = cachedProfiles(authors)
-        val missing = splits.filter { cached[it.pubkey]?.lightning.isNullOrBlank() }
-        if (missing.isNotEmpty()) {
-            val filters = missing.map { Filter(kinds = listOf(0), authors = listOf(it.pubkey), limit = 1) }
-            val routes = (missing.flatMap { it.relays } + missing.flatMap { relayLists[it.pubkey]?.write.orEmpty() } +
-                state.value.relays + RelayDefaults.seeds.take(2)).distinct().take(16)
-            accountQueries.completed(routes, filters.map { it.toJson() }) { relay, event ->
-                filters.any { it.match(event) } && accept(event, seenAt = relay)
+        val authors = if (note.tags.any { it.firstOrNull() == "zap" }) splits.map { it.pubkey }
+            else listOf(note.pubKey)
+        val cached = state.value.profiles.filterKeys { it in authors } + cachedProfiles(authors)
+        val missing = authors.filter { cached[it]?.lightning.isNullOrBlank() }
+        if (missing.isEmpty()) return@withContext cached
+        val routes = (splits.filter { it.pubkey in missing }.flatMap { it.relays } +
+            missing.flatMap { relayLists[it]?.write.orEmpty() } + state.value.relays + RelayDefaults.seeds.take(2))
+            .distinct().take(16)
+        val key = missing.sorted() + routes.sorted()
+        val request = synchronized(zapProfileRequests) {
+            zapProfileRequests[key] ?: run {
+                check(zapProfileRequests.size < 8) { "Recipient profile lookups are busy. No new payment sent; try again shortly." }
+                val pending = scope.async(start = CoroutineStart.LAZY) {
+                    // Recheck disk after joining the lookup lane: feed discovery may have completed.
+                    val before = cachedProfiles(missing)
+                    val filters = missing.filter { before[it]?.lightning.isNullOrBlank() }
+                        .map { Filter(kinds = listOf(0), authors = listOf(it), limit = 1) }
+                    if (filters.isNotEmpty()) withTimeoutOrNull(12_000) {
+                        accountQueries.completed(routes, filters.map { it.toJson() }) { relay, event ->
+                            filters.any { it.match(event) } && accept(event, seenAt = relay)
+                        }
+                    }
+                    before + cachedProfiles(missing)
+                }
+                zapProfileRequests[key] = pending
+                pending.invokeOnCompletion {
+                    synchronized(zapProfileRequests) {
+                        if (zapProfileRequests[key] === pending) zapProfileRequests.remove(key)
+                    }
+                }
+                pending
             }
         }
-        cached + cachedProfiles(authors)
+        request.start()
+        cached + request.await()
     }
 
     internal fun zapSplitProfiles(note: Event): Flow<Map<String, Profile>> = accountProfiles(zapSplits(note).map { it.pubkey })

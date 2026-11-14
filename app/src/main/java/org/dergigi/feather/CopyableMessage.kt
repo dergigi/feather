@@ -224,7 +224,7 @@ private fun FloatingNotice(host: Any, shown: AppMessages.Message, expanded: Bool
     val stackBottom = fab?.bottom?.coerceAtMost(window.height - bottom) ?: (window.height - bottom - base)
     val textHeight = with(density) { (stackBottom - top - topGap).toDp() - 64.dp * (count - 1) }
         .coerceIn(56.dp, 200.dp)
-    val tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val tint = MaterialTheme.colorScheme.primary
     Popup(popupPositionProvider = position,
         properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false)) {
         Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainer,

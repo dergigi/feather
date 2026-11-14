@@ -4,6 +4,14 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.12.2] - 2026-11-14
+
+### Changed
+- Use Feather blue for failure notice icons and countdown rings, retaining the warning shape without aggressive red styling.
+
+### Fixed
+- Resolve zap recipients from cached profile metadata and a bounded relay lookup when the UI profile is still loading. Distinguish unavailable profiles, missing Lightning addresses, and invalid addresses; preserve payment-history checks before ordinary-zap metadata discovery.
+
 ## [1.12.1] - 2026-11-14
 
 ### Changed

@@ -169,10 +169,15 @@ internal class ZapWallet(context: Context) {
     /** True only when this call newly confirms payment; false for an already-paid journal entry. */
     suspend fun zap(note: Event, lightning: String?, relays: List<String>, signer: NostrSignerExternal,
         signerRequests: SignerRequests, amountSats: Long, comment: String = "",
-        splitProfiles: suspend () -> Map<String, Profile> = { emptyMap() }): Boolean = withContext(Dispatchers.IO) {
+        recipientProfiles: suspend () -> Map<String, Profile> = { emptyMap() }): Boolean = withContext(Dispatchers.IO) {
         val declared = note.tags.any { it.firstOrNull() == "zap" }
         val splits = zapSplits(note)
-        if (!declared) return@withContext zapRecipient(note, lightning, relays, signer, signerRequests, amountSats, comment)
+        if (!declared) return@withContext zapRecipient(note, lightning, relays, signer, signerRequests, amountSats, comment,
+            resolveLightning = {
+                val profile = recipientProfiles()[note.pubKey]
+                    ?: error("Could not load this recipient's profile. No new payment sent; try again when the profile is available.")
+                profile.lightning
+            })
         require(splits.isNotEmpty()) { "Invalid zap split; no payment sent" }
         val amounts = allocateZap(splits, amountSats)
         val message = comment.trimEnd()
@@ -203,7 +208,7 @@ internal class ZapWallet(context: Context) {
         }
         // Resolve every endpoint before sending the first payment. An unavailable recipient
         // never silently redirects their share to the author or other recipients.
-        val profiles = splitProfiles()
+        val profiles = recipientProfiles()
         val addresses = splits.map { profiles[it.pubkey]?.lightning }
         val record = batch ?: JSONObject().put("split", true).put("batch", java.util.UUID.randomUUID().toString())
             .put("status", "split_pending").put("sats", amountSats).put("messageHash", messageHash)
@@ -211,11 +216,16 @@ internal class ZapWallet(context: Context) {
             .put("completed", org.json.JSONArray())
         val completed = record.getJSONArray("completed")
         val done = (0 until completed.length()).map { completed.getString(it) }.toMutableSet()
-        require(splits.indices.all { index ->
-            val child = sha256("${record.getString("batch")}:${splits[index].pubkey}".toByteArray())
-            splits[index].pubkey in done || store.payment(child) != null ||
-                addresses[index]?.let { LnurlForm.toUrl(it) } != null
-        }) { "A split recipient has no Lightning address; no new payment sent" }
+        splits.forEachIndexed { index, recipient ->
+            val child = sha256("${record.getString("batch")}:${recipient.pubkey}".toByteArray())
+            if (recipient.pubkey !in done && store.payment(child) == null) {
+                val profile = profiles[recipient.pubkey]
+                    ?: error("Could not load the profile for split recipient ${FeatherRepository.shortKey(recipient.pubkey)}; no new payment sent")
+                val name = noticeProfileName(recipient.pubkey, profiles)
+                require(!profile.lightning.isNullOrBlank()) { "$name's loaded profile has no Lightning address; no new payment sent" }
+                require(addresses[index]?.let { LnurlForm.toUrl(it) } != null) { "$name's Lightning address is invalid; no new payment sent" }
+            }
+        }
         store.savePayment(batchId, record)
         try {
             for ((index, recipient) in splits.withIndex()) {
@@ -242,7 +252,7 @@ internal class ZapWallet(context: Context) {
         }
     }
 
-    private suspend fun zapRecipient(note: Event, lightning: String?, relays: List<String>, signer: NostrSignerExternal, signerRequests: SignerRequests, amountSats: Long, comment: String = "", recipient: String = note.pubKey, journalId: String? = null, splitBatch: String? = null): Boolean = withContext(Dispatchers.IO) {
+    private suspend fun zapRecipient(note: Event, lightning: String?, relays: List<String>, signer: NostrSignerExternal, signerRequests: SignerRequests, amountSats: Long, comment: String = "", recipient: String = note.pubKey, journalId: String? = null, splitBatch: String? = null, resolveLightning: (suspend () -> String?)? = null): Boolean = withContext(Dispatchers.IO) {
         require(amountSats in 1..MAX_ZAP_SATS) { "Invalid zap amount" }
         val message = comment.trimEnd()
         require(message.codePointCount(0, message.length) <= 280) { "Zap message is too long" }
@@ -320,7 +330,11 @@ internal class ZapWallet(context: Context) {
                 throw WalletFailure("Payment not confirmed. Check your wallet; no new payment was sent.")
             }
             step = "Loading Lightning address"
-            val endpoint = lightning?.let(LnurlForm::toUrl) ?: error("This recipient has no Lightning address")
+            // Only new payments need metadata. Journal recovery above must never wait on profiles
+            // or turn a previous uncertain payment into a new payment attempt.
+            val address = lightning?.takeIf(String::isNotBlank) ?: resolveLightning?.invoke()
+            require(!address.isNullOrBlank()) { "This recipient's loaded profile has no Lightning address" }
+            val endpoint = LnurlForm.toUrl(address) ?: error("This recipient's Lightning address is invalid")
             val lnurl = LnurlForm.urlToBech32(endpoint)
             diagnostics["Provider"] = endpoint.toHttpUrl().host
             val params = lightningGet(endpoint, "Address")
