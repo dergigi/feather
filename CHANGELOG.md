@@ -11,6 +11,7 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ### Changed
 - Include the profile name in unfollow confirmations so each undo action identifies its target.
+- Identify the affected profile, muted word, note, or poll in follow, mute, zap, deletion, vote, and account-report errors. Zap notices include the requested amount; copied diagnostics retain the full target and error details.
 
 ### Fixed
 - Keep notices with an undo action open after copying their text, preserving access to undo.

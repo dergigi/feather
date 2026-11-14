@@ -93,12 +93,12 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
     }
     internal fun changeFollow(target: String, follow: Boolean, allowCreate: Boolean = false, hashtag: Boolean = false) {
         val identity = signer.value ?: return
-        val targetName = state.value.profiles[target]?.name?.takeIf(String::isNotBlank)
-            ?: FeatherRepository.shortKey(target)
+        val targetName = if (hashtag) "#$target" else noticeProfileName(target, state.value.profiles)
+        val operation = "${if (follow) "Follow" else "Unfollow"} $targetName"
         val actionKey = if (hashtag) "#$target" else target
         if (actionKey in followJobs) return
         if (followJobs.size >= 16) {
-            message.value = "Follow queue is full. Try again shortly."
+            AppMessages.show("$operation: follow queue is full. Try again shortly.")
             return
         }
         if (firstFollow.value?.second == actionKey) firstFollow.value = null
@@ -121,10 +121,10 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
             } catch (_: MissingFollowList) {
                 if (signer.value === identity) firstFollow.value = identity.pubKey to actionKey
             } catch (e: TimeoutCancellationException) {
-                if (signer.value === identity) message.value = "Follow operation timed out. Refresh before trying again."
+                if (signer.value === identity) showNoticeFailure(operation, e, target, "Confirmation timed out. Refresh before trying again.")
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
-                if (signer.value === identity) AppMessages.show("Follow: ${e.message}", e.stackTraceToString())
+                if (signer.value === identity) showNoticeFailure(operation, e, target)
             } finally {
                 if (followJobs[actionKey] === currentCoroutineContext()[Job]) {
                     followJobs.remove(actionKey)
@@ -147,9 +147,10 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
         if (Protocol.publicKey(pubkey) != pubkey || pubkey == identity.pubKey ||
             (pubkey in state.value.mutedAuthors) == mute || pubkey in pendingAccountMutes.value ||
             pubkey in pendingAccountUnmutes.value || pubkey in accountMuteJobs) return
+        val operation = "${if (mute) "Mute" else "Unmute"} ${noticeProfileName(pubkey, state.value.profiles)}"
         val pending = if (mute) pendingAccountMutes else pendingAccountUnmutes
         if (accountMuteJobs.size >= 16 || pending.value.size >= 64) {
-            message.value = "Action queue is full. Try again shortly."
+            AppMessages.show("$operation: action queue is full. Try again shortly.")
             return
         }
         pending.update { it + pubkey }
@@ -165,13 +166,13 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: TimeoutCancellationException) {
                 if (signer.value === identity) {
                     pending.update { it - pubkey }
-                    AppMessages.show("Mute list: request timed out", e.stackTraceToString())
+                    showNoticeFailure(operation, e, pubkey, "Confirmation timed out.")
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (signer.value === identity) {
                     pending.update { it - pubkey }
-                    AppMessages.show("Mute list: ${e.message}", e.stackTraceToString())
+                    showNoticeFailure(operation, e, pubkey)
                 }
             } finally {
                 if (accountMuteJobs[pubkey] === currentCoroutineContext()[Job]) accountMuteJobs.remove(pubkey)
@@ -192,8 +193,9 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
         if (word.isBlank() || word.length > 256) return false
         val present = muteWordEdits.value.lastOrNull { it.word == word }?.add ?: (word in state.value.mutedWords)
         if (present == add) return true
+        val operation = "${if (add) "Mute word" else "Unmute word"} “${noticePreview(word)}”"
         if (muteWordJobs.size >= 16 || muteWordEdits.value.size >= 5000) {
-            message.value = "Action queue is full. Try again shortly."
+            AppMessages.show("$operation: action queue is full. Try again shortly.")
             return false
         }
         val id = ++muteWordSequence
@@ -217,13 +219,13 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: TimeoutCancellationException) {
                 if (signer.value === identity) {
                     muteWordEdits.update { it.filterNot { edit -> edit.id == id } }
-                    AppMessages.show("Mute list: request timed out", e.stackTraceToString())
+                    showNoticeFailure(operation, e, word, "Confirmation timed out.")
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (signer.value === identity) {
                     muteWordEdits.update { it.filterNot { edit -> edit.id == id } }
-                    AppMessages.show("Mute list: ${e.message}", e.stackTraceToString())
+                    showNoticeFailure(operation, e, word)
                 }
             } finally { muteWordJobs.remove(id) }
         }
@@ -290,13 +292,15 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
     }
     fun zap(note: Event, amountSats: Long = DEFAULT_ZAP_SATS, comment: String = "") {
         if (amountSats !in 1..MAX_ZAP_SATS) return
+        // Name the note, not a presumed sole payee: a zap can have multiple recipients.
+        val operation = "$amountSats-sat zap on ${noticeEventContext(note, state.value.profiles)}"
         val request = Triple(note.id, amountSats, comment.trimEnd())
         if (request in zapJobs) return
         if (zapJobs.size >= MAX_QUEUED_ZAPS) {
-            message.value = "Zap queue is full. Wait for pending payments to finish."
+            AppMessages.show("$operation: zap queue is full. Wait for pending payments to finish.")
             return
         }
-        if (walletBusy.value) { message.value = "Wallet connection is being updated. Try again shortly."; return }
+        if (walletBusy.value) { AppMessages.show("$operation: wallet connection is being updated. Try again shortly."); return }
         val connected = signer.value ?: run { message.value = "Connect an Android signer first."; return }
         zapping.update { it + note.id }
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
@@ -311,10 +315,10 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
             }
-            catch (_: TimeoutCancellationException) { message.value = "Zap not confirmed. Check your wallet; tap again to check payment status." }
+            catch (failure: TimeoutCancellationException) { showNoticeFailure(operation, failure, note.id, "Payment not confirmed. Check your wallet; tap the same zap again to check payment status.") }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: WalletFailure) { AppMessages.show(failure.message ?: "Zap failed", failure.report ?: failure.message ?: "Zap failed") }
-            catch (failure: Exception) { message.value = "Zap: ${walletErrorReason(failure)}" }
+            catch (failure: WalletFailure) { showNoticeFailure(operation, failure, note.id, failure.message ?: "Zap failed", failure.report ?: failure.stackTraceToString()) }
+            catch (failure: Exception) { showNoticeFailure(operation, failure, note.id, walletErrorReason(failure)) }
             finally {
                 if (zapJobs[request] === currentCoroutineContext().job) {
                     zapJobs.remove(request)
@@ -700,11 +704,12 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
         val connected = signer.value ?: return
         if (note.pubKey != connected.pubKey || note.kind !in listOf(1, 20, 1111) ||
             deletingNotes.size >= 8 || !deletingNotes.add(note.id)) return
+        val operation = "Delete ${noticeEventContext(note, state.value.profiles)}"
         viewModelScope.launch {
             try { repo.deleteNote(note, connected, signerRequests) }
-            catch (e: TimeoutCancellationException) { AppMessages.show("Delete: confirmation timed out", e.stackTraceToString()) }
+            catch (e: TimeoutCancellationException) { showNoticeFailure(operation, e, note.id, "Confirmation timed out.") }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { AppMessages.show("Delete: ${e.message}", e.stackTraceToString()) }
+            catch (e: Exception) { showNoticeFailure(operation, e, note.id) }
             finally { deletingNotes.remove(note.id) }
         }
     }
@@ -730,12 +735,13 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
     internal fun vote(note: Event, choices: Set<String>) {
         val connected = signer.value ?: return
         if (note.id in state.value.pendingVotes || state.value.pendingVotes.size >= 8) return
+        val operation = "Vote on ${noticeEventContext(note, state.value.profiles, "poll")}"
         repo.voting(note.id, true)
         viewModelScope.launch {
             try { repo.vote(note, choices, connected, signerRequests) }
-            catch (e: TimeoutCancellationException) { message.value = "Vote: confirmation timed out" }
+            catch (e: TimeoutCancellationException) { showNoticeFailure(operation, e, note.id, "Confirmation timed out.") }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message.value = "Vote: ${e.message ?: e.javaClass.simpleName}" }
+            catch (e: Exception) { showNoticeFailure(operation, e, note.id) }
             finally { repo.voting(note.id, false) }
         }
     }

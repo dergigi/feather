@@ -58,6 +58,7 @@ internal class AccountReports(private val context: Context, private val scope: C
         val reason = current.reason ?: return
         if (busy.value || current.owner != identity.pubKey) return
         val run = generation
+        val operation = "Report ${noticeProfileName(current.target, repo.state.value.profiles)}"
         busy.value = true
         job = scope.launch {
             try {
@@ -107,13 +108,13 @@ internal class AccountReports(private val context: Context, private val scope: C
             } catch (e: TimeoutCancellationException) {
                 if (generation == run) {
                     visible.value = true
-                    AppMessages.show("Report: request timed out. Send again to retry.", e.stackTraceToString())
+                    showNoticeFailure(operation, e, current.target, "Confirmation timed out. Send again to retry.")
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (generation == run) {
                     visible.value = true
-                    AppMessages.show("Report: ${e.message}", e.stackTraceToString())
+                    showNoticeFailure(operation, e, current.target)
                 }
             } finally { if (generation == run) { busy.value = false; job = null } }
         }
