@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ui_photo_layout">Photo layout</string>
+    <string name="ui_photo_carousel">Carousel</string>
+    <string name="ui_photo_stacked">Stacked</string>
     <string name="ui_image_page">Image %1$d of %2$d</string>
     <string name="ui_open_image_gallery">Open image gallery</string>
     <string name="ui_post_pending">Waiting for relay confirmation</string>

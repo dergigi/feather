@@ -34,6 +34,7 @@ class FeatherApplication : Application() {
     val media by lazy { MediaStore(this) }
     internal val audio by lazy { AudioPlayback(this) }
     internal val timestamps by lazy { TimestampPreference(this) }
+    internal val photoLayout by lazy { PhotoLayoutPreference(this) }
 }
 
 data class Profile(val name: String, val about: String = "", val picture: String? = null, val username: String? = null, val banner: String? = null, val lightning: String? = null, val aboutTokens: List<NostrContent.Token> = emptyList(), val nip05: String? = null, val website: String? = null)

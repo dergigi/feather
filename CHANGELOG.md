@@ -4,6 +4,14 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-14
+
+### Added
+- Photo layout setting with icon-only Carousel and Stacked choices, accessible labels and long-press tooltips. Remember the selection on this device.
+
+### Changed
+- Default to vertically stacked photos; the horizontal carousel is now optional.
+
 ## [1.13.0] - 2026-11-14
 
 ### Changed

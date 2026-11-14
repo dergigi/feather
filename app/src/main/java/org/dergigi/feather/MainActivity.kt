@@ -1395,13 +1395,14 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
             (quoted + media).sortedBy { it.first }
         }
         val images = remember(attachments) { attachments.filter { it.kind == MediaContent.Kind.IMAGE } }
+        val carousel = LocalPhotoLayout.current == PhotoLayout.CAROUSEL
         val firstImage = orderedContent.firstOrNull { it.third?.kind == MediaContent.Kind.IMAGE }?.third
         orderedContent.forEachIndexed { index, (_, reference, attachment) ->
             if (attachment != null) {
                 // Collect the note's photos at its first image, preserving other media and quotes.
-                if (attachment.kind != MediaContent.Kind.IMAGE || attachment == firstImage) {
+                if (!carousel || attachment.kind != MediaContent.Kind.IMAGE || attachment == firstImage) {
                     Spacer(Modifier.height(12.dp))
-                    NoteMedia(note, if (attachment.kind == MediaContent.Kind.IMAGE) images else listOf(attachment), repost?.id ?: note.id)
+                    NoteMedia(note, if (carousel && attachment.kind == MediaContent.Kind.IMAGE) images else listOf(attachment), repost?.id ?: note.id)
                 }
             } else if (reference != null) {
                 if (body.isNotBlank() || index > 0) Spacer(Modifier.height(6.dp))
@@ -1817,6 +1818,7 @@ private fun Settings(vm: FeatherViewModel, state: FeedState, onChange: (Boolean?
                 onChange(null, enabled)
             }, modifier = Modifier.semantics { contentDescription = "Proof of work for posts and emoji reactions" })
         }
+        PhotoLayoutSetting()
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(painterResource(R.drawable.storage), stringResource(R.string.ui_media_cache_storage), tint = MaterialTheme.colorScheme.primary)

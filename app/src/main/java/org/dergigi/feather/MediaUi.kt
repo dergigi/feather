@@ -50,6 +50,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import coil3.size.Dimension
@@ -71,6 +72,7 @@ fun MediaHost(store: MediaStore, reading: Boolean, content: @Composable () -> Un
     val galleryVisible = LocalGalleryVisible.current
     val active = reading && lifecycleState.isAtLeast(Lifecycle.State.STARTED) && !galleryVisible
     val context = LocalContext.current
+    val photoLayout by (context.applicationContext as FeatherApplication).photoLayout.layout.collectAsStateWithLifecycle()
     val playback = remember(resources, reading) { resources?.takeIf { reading }?.let { VisibleVideos(context, it) } }
     val audio = (context.applicationContext as FeatherApplication).audio
     DisposableEffect(playback, audio, lifecycle, galleryVisible) {
@@ -84,7 +86,7 @@ fun MediaHost(store: MediaStore, reading: Boolean, content: @Composable () -> Un
     DisposableEffect(playback) { onDispose { playback?.close() } }
     val audioRequested = audio?.requested == true
     SideEffect { playback?.enabled(active && !audioRequested, keepSelected = !lifecycleState.isAtLeast(Lifecycle.State.STARTED) && !galleryVisible && !audioRequested) }
-    CompositionLocalProvider(LocalMedia provides MediaEnvironment(resources, active, playback, audio)) {
+    CompositionLocalProvider(LocalMedia provides MediaEnvironment(resources, active, playback, audio), LocalPhotoLayout provides photoLayout) {
         content()
         playback?.fullscreenPlayer?.let { FullscreenVideo(it) }
     }
@@ -143,6 +145,7 @@ fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey:
     val scope = rememberCoroutineScope()
     val videoRatios by VideoRatios.ratios.collectAsState()
     val images = remember(attachments) { attachments.filter { it.kind == MediaContent.Kind.IMAGE } }
+    val carousel = LocalPhotoLayout.current == PhotoLayout.CAROUSEL
     val onOpenImage: (MediaContent.Attachment) -> Unit = { attachment ->
         scope.launch {
             // Compact quotes display one preview, but still open the note's complete gallery.
@@ -155,7 +158,9 @@ fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey:
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         attachments.forEach { attachment ->
             if (attachment.kind == MediaContent.Kind.IMAGE) {
-                if (attachment == images.firstOrNull()) key("$mediaKey:images") {
+                if (!carousel) key(attachment.url) {
+                    InlineImage(attachment) { onOpenImage(attachment) }
+                } else if (attachment == images.firstOrNull()) key("$mediaKey:images") {
                     if (images.size > 1) InlineImageCarousel(images, onOpenImage)
                     else InlineImage(attachment) { onOpenImage(attachment) }
                 }
