@@ -4,6 +4,12 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.9] - 2026-11-14
+
+### Fixed
+- Regenerate the Zapstore listing icon from Feather's canonical vector and publish it as a new image asset, so catalog processing can replace the incorrect artwork.
+- Verify APK-extracted launcher artwork before local-APK Zapstore publication to catch accidental selection of bundled client icons.
+
 ## [1.10.8] - 2026-11-14
 
 ### Fixed

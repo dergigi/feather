@@ -7,12 +7,14 @@ A release is complete when both the signed GitHub APK and Zapstore publication e
 - Build the optimized signed release APK. Run additional checks only when requested or needed to investigate a concrete issue.
 - Commit the release source and version before the final build so its embedded Git commit links to that exact source. Record verification evidence afterward.
 - Verify APK signature using Android build-tools `apksigner verify --verbose --print-certs`.
+- Verify the extracted launcher with `scripts/verify-release-icon.sh <signed-apk>`; local-APK Zapstore publication runs this check automatically. Launcher and store images share `drawable/feather.xml`; regenerate both with `scripts/generate-launcher-icons.py` when the artwork changes.
 - Commit with Conventional Commits, tag `vX.Y.Z`, push master and tag.
 - Push through the Nostr `origin` remote to update the GRASP copies and listed GitHub mirror; see [the repository workflow](NGIT.md). Verify both GRASP copies and GitHub have the release commit and tag. Use the `github` remote explicitly when a GitHub-only operation is intended.
 - Publish signed APK plus SHA256SUMS to GitHub.
 - Use zsp 2.x. Run `scripts/zapstore-publish.sh` after the GitHub release is published, or pass an existing signed APK as the first argument. The script never builds an APK.
 - zsp reads the ignored, owner-only `.env` remote-signer connection and uses the existing NIP-C1 claim; it does not read APK keystore credentials. Claim setup/renewal is separate from publication.
 - To refresh metadata for an existing release, pass `--overwrite-release --overwrite-app-event`. Check the returned JSON status and verify the catalog listing.
+- Verify the icon in the catalog bundle, not only the signed application's `icon` URL: Zapstore distributes a separate processed `org.dergigi.feather/icon.webp`. A correct event URL does not prove that the catalog artifact was updated.
 
 Do not update or deploy the website as part of app releases. Keep its links pointed at `https://github.com/dergigi/feather/releases/latest` and `https://zapstore.dev/apps/org.dergigi.feather`, without a version label. Further website work is deferred until explicitly requested.
 

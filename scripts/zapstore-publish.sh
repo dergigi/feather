@@ -26,6 +26,7 @@ if [[ $# -gt 0 && "$1" != --* ]]; then
     echo "Signed APK not found: $1. Build the release first." >&2
     exit 1
   fi
+  "$ROOT/scripts/verify-release-icon.sh" "$1"
   ARGS+=(-s "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")")
   shift
 fi

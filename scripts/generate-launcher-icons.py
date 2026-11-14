@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rasterize the existing vector for launcher/APK-extractor compatibility.
+"""Generate launcher and store icons from the same canonical feather vector.
 Requires ImageMagick (magick). The in-app and splash vectors remain unchanged.
 """
 from pathlib import Path
@@ -22,8 +22,10 @@ for path in vector.findall('path'):
 with tempfile.TemporaryDirectory() as temp:
     source = Path(temp) / 'launcher.svg'
     ET.ElementTree(svg).write(source)
-    for density, size in [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)]:
-        destination = res / f'mipmap-{density}' / 'ic_launcher.png'
+    outputs = [(res / f'mipmap-{density}' / 'ic_launcher.png', size)
+               for density, size in [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)]]
+    outputs.append((root / 'zapstore-icon.png', 512))
+    for destination, size in outputs:
         destination.parent.mkdir(exist_ok=True)
         subprocess.run(['magick', '-background', 'none', '-density', '768', str(source),
                         '-resize', f'{size}x{size}', '-strip', 'PNG32:' + str(destination)], check=True)
