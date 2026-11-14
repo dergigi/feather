@@ -1,172 +1,32 @@
 #!/usr/bin/env bash
-# Publish feather to Zapstore.
-# Requires: zsp on PATH (or ~/bin/zsp), SIGN_WITH set to nsec1… / bunker://… / browser
-# SIGN_WITH may also live in a gitignored .env file at the repo root.
-#
-# Always publishes via a zapstore.yaml-derived config so release_notes
-# (CHANGELOG.md) are applied. Publishing a bare .apk skips the config and
-# yields "No notes" in Zapstore.
+# Publish with zsp 2 and the existing remote signer / NIP-C1 claim.
+# Optional first argument: signed APK; otherwise use the public GitHub release.
+# Remaining arguments are forwarded verbatim, e.g. --overwrite-release.
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-
 export PATH="$HOME/bin:$PATH"
 
-if [[ -z "${SIGN_WITH:-}" && -f "$ROOT/.env" ]]; then
-  SIGN_WITH="$(python3 - <<'PY'
-from pathlib import Path
-for line in Path(".env").read_text().splitlines():
-    if line.startswith("SIGN_WITH="):
-        print(line.split("=", 1)[1].strip().strip("\"'"))
-        break
-PY
-)"
-  export SIGN_WITH
-fi
-
-if [[ -z "${SIGN_WITH:-}" ]]; then
-  echo "Set SIGN_WITH to your Nostr signing method before publishing." >&2
-  echo "  export SIGN_WITH='nsec1…'          # or" >&2
-  echo "  export SIGN_WITH='bunker://…'      # or" >&2
-  echo "  export SIGN_WITH=browser" >&2
-  echo "Or put SIGN_WITH in a gitignored .env file." >&2
-  exit 1
-fi
-
 if ! command -v zsp >/dev/null 2>&1; then
-  echo "zsp not found. Install from https://github.com/zapstore/zsp/releases" >&2
+  echo "Install zsp 2: https://github.com/zapstore/zsp/releases" >&2
+  exit 1
+fi
+VERSION="$(zsp --version)"
+if [[ ! "$VERSION" =~ ^v?2\. ]]; then
+  echo "This script requires zsp 2; found $VERSION" >&2
   exit 1
 fi
 
-APK="${1:-app/build/outputs/apk/release/app-release.apk}"
-if [[ ! -f "$APK" ]]; then
-  echo "Release APK missing at $APK — building assembleRelease…"
-  ./gradlew :app:assembleRelease
-  APK="app/build/outputs/apk/release/app-release.apk"
-fi
-APK="$(cd "$(dirname "$APK")" && pwd)/$(basename "$APK")"
-
+# zsp loads SIGN_WITH from the ignored, owner-only .env itself.
+# Never load APK keystore credentials or renew the claim during publication.
 export GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null || true)}"
-
-# Load keystore password for NIP-C1 linking when needed
-if [[ -f local.properties ]]; then
-  export KEYSTORE_PASSWORD="${KEYSTORE_PASSWORD:-$(python3 - <<'PY'
-from pathlib import Path
-props = {}
-for line in Path("local.properties").read_text().splitlines():
-    if "=" in line and not line.strip().startswith("#"):
-        k, v = line.split("=", 1)
-        props[k.strip()] = v.strip()
-print(props.get("OEM_STORE_PASSWORD", ""))
-PY
-)}"
-fi
-
-P12="keystore/upload.p12"
-JKS="keystore/upload.jks"
-CERT="$P12"
-[[ -f "$CERT" ]] || CERT="$JKS"
-if [[ ! -f "$CERT" && -f local.properties ]]; then
-  CERT="$(python3 - <<'PY'
-from pathlib import Path
-props = {}
-for line in Path("local.properties").read_text().splitlines():
-    if "=" in line and not line.strip().startswith("#"):
-        k, v = line.split("=", 1)
-        props[k.strip()] = v.strip()
-print(props.get("OEM_STORE_FILE", ""))
-PY
-)"
-fi
-
-if [[ -n "$CERT" && -f "$CERT" && "${SKIP_CERT_LINK:-}" != "1" ]]; then
-  echo "Linking APK signing certificate to Nostr identity (NIP-C1)…"
-  # Never pipe a failed/empty signer output to nak: nak would generate its own
-  # default note when stdin is empty. Validate the signed proof before sending.
-  PROOF="$(mktemp -t feather-identity.XXXXXX)"
-  if zsp identity --link-key "$CERT" --key-alias upload --offline > "$PROOF"; then
-    if python3 - "$PROOF" <<'PYPROOF'
-import json, sys
-with open(sys.argv[1]) as f:
-    event = json.load(f)
-assert event.get("kind") == 30509 and event.get("sig"), "Invalid certificate identity proof"
-PYPROOF
-    then
-      nak event wss://relay.zapstore.dev wss://relay.damus.io wss://relay.primal.net < "$PROOF"
-      echo "Identity proof published."
-    else
-      rm -f "$PROOF"
-      exit 1
-    fi
-  else
-    rm -f "$PROOF"
-    echo "Certificate linking failed. Check keystore format (.p12 for PKCS12)." >&2
+ARGS=(publish "$ROOT/zapstore.yaml" --quiet --json)
+if [[ $# -gt 0 && "$1" != --* ]]; then
+  if [[ ! -f "$1" ]]; then
+    echo "Signed APK not found: $1. Build the release first." >&2
     exit 1
   fi
-  rm -f "$PROOF"
+  ARGS+=(-s "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")")
+  shift
 fi
-
-# Keep committed zapstore.yaml metadata (including release_notes) while
-# pointing at the local signed APK for this publish run.
-PUBLISH_CFG="$(mktemp -t feather-zapstore.XXXXXX.yaml)"
-cleanup() { rm -f "$PUBLISH_CFG"; }
-trap cleanup EXIT
-
-NOTES="$ROOT/CHANGELOG.md"
-ICON="$ROOT/zapstore-icon.png"
-python3 - "$ROOT" "$PUBLISH_CFG" "$NOTES" "$APK" "$ICON" <<'PY'
-from pathlib import Path
-import sys
-
-root = Path(sys.argv[1])
-out = Path(sys.argv[2])
-notes, apk, icon = sys.argv[3], sys.argv[4], sys.argv[5]
-lines = (root / "zapstore.yaml").read_text().splitlines()
-kept = []
-images = []
-in_images = False
-skip_keys = {"release_source", "release_notes", "icon"}
-for line in lines:
-    if in_images:
-        stripped = line.strip()
-        if stripped.startswith("- "):
-            raw = stripped[2:].strip()
-            path = Path(raw)
-            if not path.is_absolute():
-                path = (root / raw).resolve()
-            images.append(str(path))
-            continue
-        in_images = False
-    key = line.split(":", 1)[0].strip()
-    if key == "images" and (line.strip() == "images:" or line.startswith("images:")):
-        in_images = True
-        continue
-    if key in skip_keys:
-        continue
-    kept.append(line)
-kept.extend(
-    [
-        f"release_notes: {notes}",
-        f"release_source: {apk}",
-        f"icon: {icon}",
-    ]
-)
-if images:
-    kept.append("images:")
-    kept.extend(f"  - {path}" for path in images)
-out.write_text("\n".join(kept) + "\n")
-PY
-
-echo "Publishing to Zapstore (notes from CHANGELOG.md via zapstore.yaml)…"
-echo "  APK: $APK"
-echo "  notes: $NOTES"
-ZSP_ARGS=(publish "$PUBLISH_CFG" --skip-preview --skip-certificate-linking)
-# zsp asks for TTY confirmation; --quiet auto-yes when stdin is not a terminal.
-if [[ ! -t 0 ]]; then
-  ZSP_ARGS+=(--quiet)
-fi
-# shellcheck disable=SC2086
-zsp "${ZSP_ARGS[@]}" ${ZSP_EXTRA_ARGS:-}
-
-echo "Done. Check Zapstore for org.dergigi.feather"
+exec zsp "${ARGS[@]}" "$@"

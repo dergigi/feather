@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Changed
+- Migrate Zapstore publishing to zsp 2, using the existing signing claim and repository-relative listing assets.
+
 ## [1.10.6] - 2026-11-13
 
 ### Changed
