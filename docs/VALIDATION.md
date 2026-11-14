@@ -2187,3 +2187,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `42103f561637199962366c39d75b4256f55ce8f72aa4d9598fb4215e8398aedf` references asset `d610839963a8b0715ab8f83c7407e1568d9e0f7c52c3f0540070bc30c04625ca`; retrieved both from the relay and verified version, size, checksum and certificate. Public app page shows 1.11.0.
 - No website deployment. The separate Zapstore catalog artwork issue is not claimed fixed.
 - Catalog epoch 1102 includes the release. Its processed icon still hashes to `3e6ed5fd4354fb44a3de9964864f3dac31af4ab637c6c83d1590549d619247ac`, the same incorrect purple artwork; upstream icon issue persists.
+
+
+## 2026-11-14 — 1.11.1 release
+
+- Source/tag `febbb4448c1cf1241981fa38acc436e3406072e7`; versionCode 244. Messages open expanded, copy/undo controls sit side by side, and the message width reserves the compose FAB plus a 12dp gap.
+- Signed optimized build passed in 37s. Expected certificate and APK-extracted launcher verified; mapping archived locally. No tests or emulators run. Visual/device review remains manual.
+- APK SHA-256 `6209f3754ae165dced039954c4ff7b807d6778600af07c06f43968e7c8f3e6f8`; 16,456,557 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `64cce73dbb77135a8cfa5d25eae28b54d7a564fa8e1dfc7717070035c0555672` references asset `a612e3834895da0c6c45fcd1ca19b3419f0367b3e4f8464ca558daa2f1bbe0ba`. Relay read-back confirms version, size, checksum and signing certificate; public app page shows 1.11.1.
+- No website deployment. Store artwork repair is outside this change.
