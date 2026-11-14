@@ -149,7 +149,7 @@
     <string name="ui_poll_image_option">Image option %1$d</string>
     <string name="ui_follow_profile">Follow profile</string>
     <string name="ui_unfollow_profile">Unfollow profile</string>
-    <string name="ui_unfollowed">Unfollowed</string>
+    <string name="ui_unfollowed">Unfollowed %1$s</string>
     <string name="ui_follow_undo">Undo</string>
     <string name="ui_first_follow_title">Create follow list?</string>
     <string name="ui_first_follow_body">No existing follow list was found on your relays. Create a new list with this profile? If you already follow people in another app, cancel and check your relay connections first.</string>
@@ -238,4 +238,6 @@
     <string name="ui_show_information">Show information</string>
     <string name="ui_collapse_message">Collapse message</string>
     <string name="ui_dismiss_message">Dismiss message</string>
+    <string name="ui_notice_countdown_paused">Dismissal countdown paused</string>
+    <string name="ui_notice_countdown_running">Dismissal countdown running; expand to pause</string>
 </resources>

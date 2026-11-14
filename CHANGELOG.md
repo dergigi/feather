@@ -4,6 +4,17 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-14
+
+### Added
+- Stack up to three notices at the lower left, with the newest expanded and older notices collapsed into circles. Countdown rings show remaining time; expansion, pressing the icon, and backgrounding pause the countdown. Duplicate plain notices merge, and the oldest notice gives way when the stack is full.
+
+### Changed
+- Include the profile name in unfollow confirmations so each undo action identifies its target.
+
+### Fixed
+- Keep notices with an undo action open after copying their text, preserving access to undo.
+
 ## [1.11.1] - 2026-11-14
 
 ### Changed

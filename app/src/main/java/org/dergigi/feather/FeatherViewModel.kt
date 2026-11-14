@@ -93,6 +93,8 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
     }
     internal fun changeFollow(target: String, follow: Boolean, allowCreate: Boolean = false, hashtag: Boolean = false) {
         val identity = signer.value ?: return
+        val targetName = state.value.profiles[target]?.name?.takeIf(String::isNotBlank)
+            ?: FeatherRepository.shortKey(target)
         val actionKey = if (hashtag) "#$target" else target
         if (actionKey in followJobs) return
         if (followJobs.size >= 16) {
@@ -112,7 +114,7 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
                 }
                 if (!follow && !hashtag && signer.value === identity) {
                     val app = getApplication<Application>()
-                    AppMessages.showAction(app.getString(R.string.ui_unfollowed), app.getString(R.string.ui_follow_undo)) {
+                    AppMessages.showAction(app.getString(R.string.ui_unfollowed, targetName), app.getString(R.string.ui_follow_undo)) {
                         if (signer.value === identity) changeFollow(target, true, hashtag = hashtag)
                     }
                 }

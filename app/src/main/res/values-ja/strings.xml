@@ -149,7 +149,7 @@
     <string name="ui_poll_image_option">画像の選択肢 %1$d</string>
     <string name="ui_follow_profile">フォローする</string>
     <string name="ui_unfollow_profile">フォローを解除する</string>
-    <string name="ui_unfollowed">フォローを解除しました</string>
+    <string name="ui_unfollowed">%1$sさんのフォローを解除しました</string>
     <string name="ui_follow_undo">元に戻す</string>
     <string name="ui_first_follow_title">フォローリストを作成しますか？</string>
     <string name="ui_first_follow_body">リレーに既存のフォローリストが見つかりませんでした。このプロフィールを含む新しいリストを作成しますか？別のアプリですでにフォローしている場合は、キャンセルしてリレー接続を確認してください。</string>
@@ -234,4 +234,6 @@
     <string name="ui_recipe_prep">下ごしらえ: %1$s</string>
     <string name="ui_recipe_cook">調理: %1$s</string>
     <string name="ui_recipe_servings">分量: %1$s</string>
+    <string name="ui_notice_countdown_paused">自動消去までのカウントダウンは一時停止中です</string>
+    <string name="ui_notice_countdown_running">自動消去までカウントダウン中です。展開すると一時停止します</string>
 </resources>
