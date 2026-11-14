@@ -2170,3 +2170,10 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `633f793b04855f12f6efd0125dc9975551700d18c45703504c79bfd6eb11ea16` and asset `e7c737ba69a76ac324ceb5e403482db390c62a181f1dd2a654a40963114fd071` appear in catalog epoch 1079; public page shows 1.10.9.
 - Store icon regenerated from the same canonical vector as the launcher; the new published image is visually correct. Local-APK publication now checks zsp-extracted pixels against the expected launcher bitmap before signing/uploading.
 - Remaining upstream defect confirmed: epoch 1079 contains the new icon URL but embeds the same wrong purple image as epoch 1078. This is not merely an old client bundle. See [catalog evidence](ZAPSTORE_ICON.md); the previous cache-only explanation was not established.
+
+## 2026-11-14 — Zapstore PNG metadata compatibility check
+
+- Compared Amethyst and Ditto's publishing configs and real catalog images. Both explicitly publish PNG icons and their processed images are correct.
+- Updated the publishing wrapper to preserve original image bytes; republished 1.10.9 metadata only with `--no-compress --overwrite-release --overwrite-app-event`. No APK build, new version, tests, emulator, or website deployment.
+- Publication succeeded. Application `2899effb256225024993b913bde892580c9727169b18912df4e35067c43cffdd` references the original PNG; CDN download matches the repository file exactly.
+- Waited for catalog epoch 1087. It includes the PNG event but still embeds the old purple image byte for byte. The format compatibility change did not fix the upstream artifact; evidence updated in `docs/ZAPSTORE_ICON.md`.

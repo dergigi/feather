@@ -13,6 +13,7 @@ A release is complete when both the signed GitHub APK and Zapstore publication e
 - Publish signed APK plus SHA256SUMS to GitHub.
 - Use zsp 2.x. Run `scripts/zapstore-publish.sh` after the GitHub release is published, or pass an existing signed APK as the first argument. The script never builds an APK.
 - zsp reads the ignored, owner-only `.env` remote-signer connection and uses the existing NIP-C1 claim; it does not read APK keystore credentials. Claim setup/renewal is separate from publication.
+- Preserve the checked-in media bytes with `--no-compress` (set by the publishing script). This publishes the original PNG icon, matching Amethyst and Ditto's working listings, and keeps our already-optimized screenshots intact. This is a compatibility measure, not proof that WebP caused the catalog mismatch.
 - To refresh metadata for an existing release, pass `--overwrite-release --overwrite-app-event`. Check the returned JSON status and verify the catalog listing.
 - Verify the icon in the catalog bundle, not only the signed application's `icon` URL: Zapstore distributes a separate processed `org.dergigi.feather/icon.webp`. A correct event URL does not prove that the catalog artifact was updated.
 

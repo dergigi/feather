@@ -25,3 +25,23 @@ Inspect the stored icon bytes and `icon_from` memo for `org.dergigi.feather`, th
 - [Catalog artifact selection](https://github.com/zapstore/relay/blob/main/pkg/catalog/artifacts.go)
 
 The operator has `steroid --images-only org.dergigi.feather` and forced enrichment available. A repaired icon must also reach a new catalog snapshot/delta; changing only the stored row does not establish that Android clients receive it. No upstream report or operator command has been sent/run on the server.
+
+## Comparison with working listings
+
+Checked Amethyst and Ditto's source publishing configuration and their images in catalog epoch 1078:
+
+| App | Explicit source icon | Published image format | Catalog image |
+| --- | --- | --- | --- |
+| Amethyst | `amethyst/src/main/ic_launcher-playstore.png` | PNG, 512×512, Zapstore CDN | Correct Amethyst logo |
+| Ditto | `public/logo.png` | PNG, 128×128, blossom.ditto.pub | Correct Ditto logo |
+| Feather before this comparison | `zapstore-icon.png` | Converted to WebP, 512×512, Zapstore CDN | Wrong purple bird |
+
+Sources: [Amethyst config](https://github.com/vitorpamplona/amethyst/blob/main/zapstore.yaml), [Amethyst release workflow](https://github.com/vitorpamplona/amethyst/blob/main/RELEASE_OPS.md), [Ditto config](https://gitlab.com/soapbox-pub/ditto/-/blob/main/zapstore.yaml). Amethyst uses its own `amy releases publish` command, with `zsp` retained as a fallback. Both publish the same NIP-82 event kinds as Feather. Their older listings include a deprecated `h` community tag; zsp 2 deliberately omits it, and it is not an icon field.
+
+As a compatibility measure, the publishing wrapper now passes `--no-compress`, preserving the original PNG and already-optimized screenshot bytes. Republished the existing 1.10.9 metadata without rebuilding or changing the APK:
+
+- Application: `2899effb256225024993b913bde892580c9727169b18912df4e35067c43cffdd`.
+- Replacement release event: `431110fb83db6f4b4228ea8f9edb02af195ce0c8aed17d1b2a6950319ed520ec`.
+- Icon: `https://cdn.zapstore.dev/986f5ab540ff587eed665869d5edede6d02d8643f78e79bc0e3d6e5fbd16c4ce.png`; downloaded bytes match the checked-in PNG exactly, and the CDN serves `image/png`.
+
+Result: catalog epoch **1087** (delta from 1086, manifest `bf76b0b370ecef5576f84b14b7b509911e9928d2cb7b5d380cbaf5cc396cc28f`) contains the new PNG application event, but its embedded icon still has SHA-256 `3e6ed5fd4354fb44a3de9964864f3dac31af4ab637c6c83d1590549d619247ac` and shows the purple bird. Preserving PNG did not repair the server artifact. Do not claim this format change resolved the problem or that another app release is required. The upstream processor needs investigation/repair.

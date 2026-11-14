@@ -4,6 +4,9 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Changed
+- Preserve the original PNG store icon and already-optimized screenshots during Zapstore publication.
+
 ## [1.10.9] - 2026-11-14
 
 ### Fixed

@@ -20,7 +20,9 @@ fi
 # zsp loads SIGN_WITH from the ignored, owner-only .env itself.
 # Never load APK keystore credentials or renew the claim during publication.
 export GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null || true)}"
-ARGS=(publish "$ROOT/zapstore.yaml" --quiet --json)
+# Keep the PNG icon as PNG, like the working Amethyst and Ditto listings.
+# Screenshots are already cropped, optimized WebP assets in the repository.
+ARGS=(publish "$ROOT/zapstore.yaml" --quiet --json --no-compress)
 if [[ $# -gt 0 && "$1" != --* ]]; then
   if [[ ! -f "$1" ]]; then
     echo "Signed APK not found: $1. Build the release first." >&2
