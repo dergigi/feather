@@ -9,8 +9,13 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,16 +27,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -127,10 +140,27 @@ fun RemoteImage(url: String?, modifier: Modifier, description: String? = null, c
 fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey: String = note.id) {
     val media = LocalMedia.current
     val openGallery = LocalOpenGallery.current
+    val scope = rememberCoroutineScope()
     val videoRatios by VideoRatios.ratios.collectAsState()
-    val gallery = remember(note.id) { MediaContent.attachments(note, limit = 32).filter { it.kind == MediaContent.Kind.IMAGE }.map { it.url } }
+    val images = remember(attachments) { attachments.filter { it.kind == MediaContent.Kind.IMAGE } }
+    val onOpenImage: (MediaContent.Attachment) -> Unit = { attachment ->
+        scope.launch {
+            // Compact quotes display one preview, but still open the note's complete gallery.
+            val gallery = withContext(Dispatchers.Default) {
+                MediaContent.attachments(note, limit = 32).filter { it.kind == MediaContent.Kind.IMAGE }.map { it.url }
+            }
+            openGallery(gallery, gallery.indexOf(attachment.url).coerceAtLeast(0), note)
+        }
+    }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         attachments.forEach { attachment ->
+            if (attachment.kind == MediaContent.Kind.IMAGE) {
+                if (attachment == images.firstOrNull()) key("$mediaKey:images") {
+                    if (images.size > 1) InlineImageCarousel(images, onOpenImage)
+                    else InlineImage(attachment) { onOpenImage(attachment) }
+                }
+                return@forEach
+            }
             key(attachment.url) {
                 val identity = "$mediaKey:${attachment.url}"
                 if (attachment.kind == MediaContent.Kind.AUDIO) {
@@ -141,9 +171,7 @@ fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey:
                 val videos = media.playback
                 val playback = videos?.clip(identity)
                 DisposableEffect(identity, videos) { onDispose { videos?.remove(identity) } }
-                if (attachment.kind == MediaContent.Kind.IMAGE) {
-                    InlineImage(attachment) { openGallery(gallery, gallery.indexOf(attachment.url), note) }
-                } else Box(Modifier.fillMaxWidth().aspectRatio(videoRatios[attachment.url] ?: attachment.ratio).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer)
+                Box(Modifier.fillMaxWidth().aspectRatio(videoRatios[attachment.url] ?: attachment.ratio).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer)
                     .onGloballyPositioned { coordinates ->
                         if (attachment.kind == MediaContent.Kind.VIDEO) videos?.report(identity, attachment.url, coordinates.boundsInWindow(), coordinates.size.height.toFloat(), attachment.mime, note, attachment.preview)
                     }) {
@@ -178,6 +206,61 @@ fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey:
     }
 }
 
+// Swipes that reach either end belong to the images, not the surrounding feed-tab pager.
+// Vertical scrolling and flings still pass through to the feed.
+private val ImageCarouselScroll = object : NestedScrollConnection {
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource) = Offset(available.x, 0f)
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity) = Velocity(available.x, 0f)
+}
+
+@Composable
+private fun InlineImageCarousel(images: List<MediaContent.Attachment>, onOpen: (MediaContent.Attachment) -> Unit) {
+    val pager = rememberPagerState(pageCount = { images.size })
+    val ratios = remember(images) {
+        mutableStateMapOf(*images.map { it.url to (ImageRatios.get(it.url) ?: it.ratio) }.toTypedArray())
+    }
+    val selected = images[pager.settledPage.coerceIn(images.indices)]
+    val pageDescription = stringResource(R.string.ui_image_page, pager.currentPage + 1, images.size)
+    val openLabel = stringResource(R.string.ui_open_image_gallery)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val widthPx = with(LocalDensity.current) { maxWidth.roundToPx() }
+        // Keep the height steady during the swipe, then fit the selected image without cropping.
+        val height by animateDpAsState(maxWidth / (ratios[selected.url] ?: selected.ratio), tween(180), label = "Carousel height")
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer)) {
+                HorizontalPager(state = pager, key = { images[it].url }, beyondViewportPageCount = 0,
+                    modifier = Modifier.fillMaxSize().nestedScroll(ImageCarouselScroll)
+                        .semantics { stateDescription = pageDescription }) { page ->
+                    val attachment = images[page]
+                    RemoteImage(attachment.url,
+                        Modifier.fillMaxSize().clickable(onClickLabel = openLabel) { onOpen(attachment) },
+                        attachment.alt ?: stringResource(R.string.ui_image_page, page + 1, images.size),
+                        crop = false, widthPx = widthPx,
+                        onImageSize = { width, imageHeight ->
+                            ImageRatios.put(attachment.url, width, imageHeight)?.let { ratios[attachment.url] = it }
+                        })
+                }
+            }
+            // A bounded moving window keeps even a 32-image post's indicator small.
+            val dotCount = minOf(images.size, 7)
+            val firstDot = (pager.currentPage - dotCount / 2).coerceIn(0, images.size - dotCount)
+            Row(Modifier.padding(top = 8.dp).height(12.dp).clearAndSetSemantics {},
+                verticalAlignment = Alignment.CenterVertically) {
+                repeat(dotCount) { index ->
+                    val page = firstDot + index
+                    val selectedDot = page == pager.currentPage
+                    val continuation = (index == 0 && firstDot > 0) || (index == dotCount - 1 && page < images.lastIndex)
+                    Box(Modifier.size(12.dp), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(when { selectedDot -> 8.dp; continuation -> 4.dp; else -> 6.dp })
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .4f), CircleShape))
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** Decode at the column width; source dimensions determine height, including portrait photos. */
 @Composable
 private fun InlineImage(attachment: MediaContent.Attachment, onOpen: () -> Unit) {
@@ -187,7 +270,7 @@ private fun InlineImage(attachment: MediaContent.Attachment, onOpen: () -> Unit)
         RemoteImage(attachment.url,
             Modifier.fillMaxWidth().aspectRatio(ratio).clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer)
-                .clickable(onClickLabel = "Open image gallery", onClick = onOpen),
+                .clickable(onClickLabel = stringResource(R.string.ui_open_image_gallery), onClick = onOpen),
             attachment.alt ?: "Image", crop = false, widthPx = widthPx, fillWidth = true,
             onImageSize = { width, height ->
                 ImageRatios.put(attachment.url, width, height)?.let { ratio = it }

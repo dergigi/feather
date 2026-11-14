@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-14
+
+### Changed
+- Group a note's photos into a horizontal carousel with compact page dots instead of stacking them vertically. Preserve image proportions, open the tapped photo in the full-screen gallery, and keep carousel swipes within the note.
+
 ## [1.12.2] - 2026-11-14
 
 ### Changed
