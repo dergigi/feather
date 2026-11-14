@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -108,7 +107,8 @@ internal fun CopyableMessageHost() {
     val dismissLabel = stringResource(R.string.ui_dismiss_message)
     Popup(alignment = Alignment.BottomStart,
         properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false)) {
-        BoxWithConstraints(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)) {
+        BoxWithConstraints(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 80.dp)) {
             val expandedWidth = maxWidth.coerceAtMost(560.dp)
             Surface(shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
@@ -144,7 +144,7 @@ internal fun CopyableMessageHost() {
                                 AppMessages.dismiss(shown.id)
                                 shown.action.invoke()
                             }) {
-                                Icon(Icons.AutoMirrored.Filled.Undo, shown.actionLabel)
+                                Icon(painterResource(R.drawable.undo), shown.actionLabel)
                             }
                         }
                     }
