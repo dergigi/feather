@@ -2217,3 +2217,13 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `27d5ad972d8a4cbc43c2d1e823d8b33e49e9f50178759b384821a15b431d206b` references asset `40c89a45b5ba7bea9059241f0bcb9deb93f13a1f732032ac5305937dd431817e`; relay read-back confirms version, size, checksum and certificate. Public app page shows 1.12.1.
 - No website deployment.
 - Catalog epoch 1112 includes 1.12.1 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## 2026-11-14 — 1.12.2 release
+
+- Source/tag `17ac818f75cb734d2ecec46b0002fea3d04406de`; versionCode 247. Failure notice icons/rings use Feather blue. Ordinary zaps resolve missing recipient metadata after existing payment-journal checks, using memory/disk and bounded shared relay lookups; profile-unavailable, missing-address and invalid-address errors are distinct, including split preflight. No automatic payment retry added.
+- Signed optimized build passed in 41s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Profile-loading behavior and notice appearance await manual device validation.
+- APK SHA-256 `10f8898f487c3f5afeb846431db9aeb6da9a806892bbe94a0954596f92c13e31`; 16,458,709 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `cf0deb50e9292f93f1d4924f895641d446e8ce25666f42ff7931c977276e9d7f` references asset `2903b5b3805365ada4e6a0db2e7927a2f658f7e6a33f81a16c6a398f436dfb88`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.12.2.
+- No website deployment.
+- Catalog epoch 1113 includes 1.12.2 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
