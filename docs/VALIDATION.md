@@ -2144,3 +2144,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `c5fb747b208864c649dc84311adf9f4fa973ade1cf800e441432392005bc38be`; 16,437,837 bytes. GitHub asset digest and downloaded Zapstore CDN APK match. SHA256SUMS published; both GRASP release tags verified.
 - Zapstore release `2f55ec9013b36e82a31baed6be1c61e55f74d76c87952890d18b92f7322340c8` references asset `b486fc860e643d494eb27d6636317b5e0330ed07a0c770f4484c772529571968`. Catalog versionCode, size, checksum and certificate match.
 - Japanese translation refinements merged with public-report and tap/hold accessibility wording retained. Bookmark implementation remains stashed and excluded. No website deployment.
+
+## 2026-11-14 — 1.10.7 release
+
+- Release source/tag `e54f099d51d5ec0352320ffdd17dbb1b2d13cfa3`; versionCode 240.
+- Signed optimized release build passed in 1m 22s. Package/version and expected signing certificate verified; mapping archived locally. No tests or emulators run, per the release workflow.
+- APK SHA-256 `fec83466396e15665ce8de9b7b95fa5462dbd106ca9214f1891e6ff8ad0fae48`; 16,437,837 bytes. GitHub asset digest and downloaded Zapstore CDN APK match. SHA256SUMS published; both GRASP release tags verified.
+- Zapstore release `0abf39152cb0ca1ba6bb077532c79e76bf135f9864a593135f8d391fbaa489f5` references asset `d881dc839b7c63d00c295a3c67f7d5ef002de16a950f55fb594fbe25fd2d81ca`; catalog metadata matches and the public app page shows 1.10.7.
+- Merged the contributor's ordinary-note imeta fix; ngit marks the proposal applied. Picture/video metadata support is retained. Avatar fallback thumbnails load on IO and remain under the shared disk budget, while weekly refresh and bounded retry behavior continue. Visual/device review remains manual.
