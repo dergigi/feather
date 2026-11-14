@@ -2152,3 +2152,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `fec83466396e15665ce8de9b7b95fa5462dbd106ca9214f1891e6ff8ad0fae48`; 16,437,837 bytes. GitHub asset digest and downloaded Zapstore CDN APK match. SHA256SUMS published; both GRASP release tags verified.
 - Zapstore release `0abf39152cb0ca1ba6bb077532c79e76bf135f9864a593135f8d391fbaa489f5` references asset `d881dc839b7c63d00c295a3c67f7d5ef002de16a950f55fb594fbe25fd2d81ca`; catalog metadata matches and the public app page shows 1.10.7.
 - Merged the contributor's ordinary-note imeta fix; ngit marks the proposal applied. Picture/video metadata support is retained. Avatar fallback thumbnails load on IO and remain under the shared disk budget, while weekly refresh and bounded retry behavior continue. Visual/device review remains manual.
+
+## 2026-11-14 — 1.10.8 release
+
+- Release source/tag `837c51274c78a06516274379852483f2dc98ac5a`; versionCode 241.
+- Signed release build passed in 41s. Package/version and expected signing certificate verified; mapping archived. No tests or emulators run.
+- APK SHA-256 `ff08d587705ebc5accffb501d242fb52c87f9cc81c42bcf3764508727ddf2a88`; 16,454,261 bytes. GitHub asset digest and complete Zapstore CDN download match. Release tag pushed to both GRASP mirrors. No website deployment.
+- Zapstore v2 release `09393adf05395513b16e35519eb5aa04864a08d4358998c992fcb8163593d862` references asset `e9e8c92c755311df1d2aed416cb397f22d8a959c494ffe8e07f5a336d80f990d`; public app page shows 1.10.8.
+- Reproduced incorrect purple icon with zsp APK extraction on 1.10.7. Added density-specific bitmap launcher resources generated from the existing feather vector. Visually verified zsp extraction from signed 1.10.8 produces the blue feather with white stem.
+- Remaining external issue: Zapstore's processed catalog icon still shows the purple bird, although the signed app event points to the correct blue icon and the current APK extracts correctly. Do not treat Android catalog presentation as verified. Upstream steroid caches icons by source URL (or "apk"), independently of the APK hash; a catalog artifact refresh may be required.
