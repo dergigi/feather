@@ -4,7 +4,10 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-14
+
 ### Changed
+- Replace custom message banners with a compact floating info or warning button at the lower left. Tap to expand or collapse; expanded messages stay open for reading, copying full details, undoing an unfollow, or reopening a failed draft.
 - Preserve the original PNG store icon and already-optimized screenshots during Zapstore publication.
 
 ## [1.10.9] - 2026-11-14

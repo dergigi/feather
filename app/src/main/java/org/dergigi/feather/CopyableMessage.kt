@@ -14,7 +14,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -26,7 +35,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 /** One transient message, never an unbounded queue of stale errors. */
 internal object AppMessages {
-    data class Message(val id: Long, val text: String, val details: String, val actionLabel: String? = null, val action: (() -> Unit)? = null, val tapLabel: String? = null, val onTap: (() -> Unit)? = null)
+    enum class Style { INFO, WARNING }
+    data class Message(val id: Long, val text: String, val details: String, val actionLabel: String? = null, val action: (() -> Unit)? = null, val tapLabel: String? = null, val onTap: (() -> Unit)? = null, val style: Style = Style.WARNING)
     val current = MutableStateFlow<Message?>(null)
     val topHost = MutableStateFlow<Any?>(null)
     private val hosts = mutableListOf<Any>()
@@ -44,12 +54,12 @@ internal object AppMessages {
     }
 
 
-    @Synchronized fun show(text: String, details: String = text) {
-        if (text.isBlank() || (current.value?.text == text && current.value?.details == details)) return
-        current.value = Message(++sequence, text, details)
+    @Synchronized fun show(text: String, details: String = text, style: Style = Style.WARNING) {
+        if (text.isBlank() || (current.value?.text == text && current.value?.details == details && current.value?.style == style)) return
+        current.value = Message(++sequence, text, details, style = style)
     }
     @Synchronized fun showAction(text: String, label: String, action: () -> Unit) {
-        current.value = Message(++sequence, text, text, label, action)
+        current.value = Message(++sequence, text, text, label, action, style = Style.INFO)
     }
     @Synchronized fun showTappable(text: String, details: String, label: String, onTap: () -> Unit): Long {
         val id = ++sequence
@@ -76,9 +86,10 @@ internal fun CopyableMessageHost() {
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val active = top === host && lifecycle.isAtLeast(Lifecycle.State.STARTED)
     val accessibility = LocalAccessibilityManager.current
-    LaunchedEffect(message?.id, active) {
+    var expanded by remember(message?.id) { mutableStateOf(false) }
+    LaunchedEffect(message?.id, active, expanded) {
         val shown = message ?: return@LaunchedEffect
-        if (!active) return@LaunchedEffect
+        if (!active || expanded) return@LaunchedEffect
         delay(accessibility?.calculateRecommendedTimeoutMillis(6_000L,
             containsIcons = true, containsText = true, containsControls = true) ?: 6_000L)
         AppMessages.dismiss(shown.id)
@@ -91,22 +102,54 @@ internal fun CopyableMessageHost() {
         clipboard.setPrimaryClip(ClipData.newPlainText("Feather message", shown.details))
         AppMessages.dismiss(shown.id)
     }
-    Popup(alignment = Alignment.BottomCenter,
+    val warning = shown.style == AppMessages.Style.WARNING
+    val expandLabel = stringResource(if (warning) R.string.ui_show_warning else R.string.ui_show_information)
+    val collapseLabel = stringResource(R.string.ui_collapse_message)
+    val dismissLabel = stringResource(R.string.ui_dismiss_message)
+    Popup(alignment = Alignment.BottomStart,
         properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false)) {
-        Snackbar(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-            .padding(16.dp).widthIn(max = 560.dp).clickable(onClickLabel = shown.tapLabel ?: stringResource(R.string.ui_copy_message)) {
-                val onTap = shown.onTap
-                if (onTap == null) copy()
-                else { AppMessages.dismiss(shown.id); onTap() }
-            },
-            action = {
-                if (shown.action != null) TextButton(onClick = {
-                    AppMessages.dismiss(shown.id)
-                    shown.action.invoke()
-                }) { Text(shown.actionLabel.orEmpty()) }
-                else IconButton(onClick = ::copy) { Icon(painterResource(R.drawable.copy), stringResource(R.string.ui_copy_message)) }
-            }) {
-            Text(shown.text, maxLines = 6, overflow = TextOverflow.Ellipsis)
+        BoxWithConstraints(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)) {
+            val expandedWidth = maxWidth.coerceAtMost(560.dp)
+            Surface(shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shadowElevation = 6.dp,
+                modifier = Modifier.animateContentSize(tween(220), alignment = Alignment.BottomStart)
+                    .semantics {
+                        liveRegion = LiveRegionMode.Polite
+                        customActions = listOf(CustomAccessibilityAction(dismissLabel) {
+                            AppMessages.dismiss(shown.id); true
+                        })
+                    }) {
+                Row(modifier = if (expanded) Modifier.width(expandedWidth) else Modifier,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(56.dp)
+                        .semantics { stateDescription = shown.text }) {
+                        Icon(if (warning) Icons.Default.Warning else Icons.Default.Info,
+                            if (expanded) collapseLabel else expandLabel,
+                            tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                    }
+                    if (expanded) {
+                        Text(shown.text, style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f).heightIn(max = 200.dp)
+                                .verticalScroll(rememberScrollState()).padding(vertical = 16.dp)
+                                .then(if (shown.onTap != null) Modifier.clickable(onClickLabel = shown.tapLabel) {
+                                    AppMessages.dismiss(shown.id)
+                                    shown.onTap.invoke()
+                                } else Modifier))
+                        Column(Modifier.padding(end = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            IconButton(onClick = ::copy) {
+                                Icon(painterResource(R.drawable.copy), stringResource(R.string.ui_copy_message))
+                            }
+                            if (shown.action != null) IconButton(onClick = {
+                                AppMessages.dismiss(shown.id)
+                                shown.action.invoke()
+                            }) {
+                                Icon(Icons.AutoMirrored.Filled.Undo, shown.actionLabel)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

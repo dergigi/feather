@@ -234,4 +234,8 @@
     <string name="ui_recipe_prep">Prep: %1$s</string>
     <string name="ui_recipe_cook">Cook: %1$s</string>
     <string name="ui_recipe_servings">Servings: %1$s</string>
+    <string name="ui_show_warning">Show warning</string>
+    <string name="ui_show_information">Show information</string>
+    <string name="ui_collapse_message">Collapse message</string>
+    <string name="ui_dismiss_message">Dismiss message</string>
 </resources>
