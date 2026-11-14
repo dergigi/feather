@@ -7,6 +7,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -48,9 +50,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /** At most three transient notices; countdowns survive screen/modal host changes. */
 internal object AppMessages {
     enum class Style { INFO, WARNING }
-    data class Message(val id: Long, val text: String, val details: String, val actionLabel: String? = null, val action: (() -> Unit)? = null, val tapLabel: String? = null, val onTap: (() -> Unit)? = null, val style: Style = Style.WARNING, val remaining: Float = 1f)
+    data class Message(val id: Long, val text: String, val details: String, val actionLabel: String? = null, val action: (() -> Unit)? = null, val tapLabel: String? = null, val onTap: (() -> Unit)? = null, val style: Style = Style.WARNING, val remaining: Float = 1f, val paused: Boolean = false)
     data class Stack(val messages: List<Message> = emptyList(), val expandedId: Long? = null)
     val current = MutableStateFlow(Stack())
+    data class ComposeAnchor(val owner: Any, val root: android.view.View, val bounds: IntRect)
+    val composeAnchor = MutableStateFlow<ComposeAnchor?>(null)
     val topHost = MutableStateFlow<Any?>(null)
     private val hosts = mutableListOf<Any>()
     private var sequence = 0L
@@ -78,7 +82,7 @@ internal object AppMessages {
         }
         if (duplicate != null) {
             val others = current.value.messages.filterNot { it.id == duplicate.id }
-            current.value = Stack(others + duplicate.copy(remaining = 1f), duplicate.id)
+            current.value = Stack(others + duplicate.copy(remaining = 1f, paused = false), duplicate.id)
         } else enqueue(Message(++sequence, text, details, style = style))
     }
     @Synchronized fun showAction(text: String, label: String, action: () -> Unit) {
@@ -94,11 +98,20 @@ internal object AppMessages {
         if (stack.messages.none { it.id == id }) return
         current.value = stack.copy(expandedId = if (stack.expandedId == id) null else id)
     }
+    @Synchronized fun togglePause(id: Long) {
+        val stack = current.value
+        current.value = stack.copy(messages = stack.messages.map {
+            if (it.id == id) it.copy(paused = !it.paused) else it
+        })
+    }
+    @Synchronized fun clearComposeAnchor(owner: Any) {
+        if (composeAnchor.value?.owner === owner) composeAnchor.value = null
+    }
     @Synchronized fun elapse(host: Any, id: Long, elapsedMillis: Long, timeoutMillis: Long) {
         if (topHost.value !== host) return
         val stack = current.value
-        if (stack.expandedId == id) return
         val notice = stack.messages.firstOrNull { it.id == id } ?: return
+        if (notice.paused) return
         val remaining = (notice.remaining - elapsedMillis.toFloat() / timeoutMillis.coerceAtLeast(1)).coerceAtLeast(0f)
         if (remaining == 0f) dismiss(id)
         else current.value = stack.copy(messages = stack.messages.map { if (it.id == id) it.copy(remaining = remaining) else it })
@@ -148,10 +161,12 @@ private fun FloatingNotice(host: Any, shown: AppMessages.Message, expanded: Bool
     val accessibility = LocalAccessibilityManager.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    val scroll = rememberScrollState()
+    val interacting = pressed || scroll.isScrollInProgress
     val timeout = accessibility?.calculateRecommendedTimeoutMillis(6_000L,
         containsIcons = true, containsText = true, containsControls = true) ?: 6_000L
-    LaunchedEffect(shown.id, expanded, pressed, timeout) {
-        if (expanded || pressed || timeout == Long.MAX_VALUE) return@LaunchedEffect
+    LaunchedEffect(shown.id, shown.paused, interacting, timeout) {
+        if (shown.paused || interacting || timeout == Long.MAX_VALUE) return@LaunchedEffect
         var previous = SystemClock.uptimeMillis()
         while (true) {
             delay(50)
@@ -170,9 +185,14 @@ private fun FloatingNotice(host: Any, shown: AppMessages.Message, expanded: Bool
     val expandLabel = stringResource(if (warning) R.string.ui_show_warning else R.string.ui_show_information)
     val collapseLabel = stringResource(R.string.ui_collapse_message)
     val dismissLabel = stringResource(R.string.ui_dismiss_message)
-    val timerLabel = stringResource(if (expanded || pressed || timeout == Long.MAX_VALUE)
+    val timerLabel = stringResource(if (shown.paused || interacting || timeout == Long.MAX_VALUE)
         R.string.ui_notice_countdown_paused else R.string.ui_notice_countdown_running)
+    val timerAction = stringResource(if (shown.paused) R.string.ui_resume_notice_countdown else R.string.ui_pause_notice_countdown)
+    val canCopy = shown.details.isNotBlank() && shown.details != shown.text
     val density = LocalDensity.current
+    val root = LocalView.current.rootView
+    val anchor by AppMessages.composeAnchor.collectAsStateWithLifecycle()
+    val fab = anchor?.takeIf { it.root === root }?.bounds
     val direction = LocalLayoutDirection.current
     val window = LocalWindowInfo.current.containerSize
     val safe = WindowInsets.safeDrawing
@@ -183,18 +203,26 @@ private fun FloatingNotice(host: Any, shown: AppMessages.Message, expanded: Bool
     val edge = with(density) { 24.dp.roundToPx() }
     val base = with(density) { 80.dp.roundToPx() }
     val topGap = with(density) { 16.dp.roundToPx() }
-    val position = remember(left, right, top, bottom, edge, base, topGap, bottomOffset) {
+    val gap = with(density) { 12.dp.roundToPx() }
+    val position = remember(left, right, top, bottom, edge, base, topGap, bottomOffset, fab) {
         object : PopupPositionProvider {
             override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize,
                 layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset = IntOffset(
                 if (layoutDirection == LayoutDirection.Ltr) left + edge
                 else windowSize.width - right - edge - popupContentSize.width,
-                (windowSize.height - bottom - base - bottomOffset - popupContentSize.height).coerceAtLeast(top + topGap))
+                ((fab?.bottom?.coerceAtMost(windowSize.height - bottom)
+                    ?: (windowSize.height - bottom - base)) - bottomOffset - popupContentSize.height)
+                    .coerceAtLeast(top + topGap))
         }
     }
-    // Leave the 56dp compose button and a 12dp gap clear on the opposite side.
-    val expandedWidth = with(density) { (window.width - left - right).toDp() - 48.dp - 56.dp - 12.dp }.coerceAtLeast(56.dp)
-    val textHeight = with(density) { (window.height - top - bottom).toDp() - 96.dp - 64.dp * (count - 1) }
+    // Use the actual FAB bounds on this window; modal windows retain the safe fallback.
+    val widthPixels = if (fab != null) {
+        if (direction == LayoutDirection.Ltr) fab.left - gap - left - edge
+        else window.width - right - edge - fab.right - gap
+    } else window.width - left - right - 2 * edge - with(density) { 68.dp.roundToPx() }
+    val expandedWidth = with(density) { widthPixels.toDp() }.coerceAtLeast(56.dp)
+    val stackBottom = fab?.bottom?.coerceAtMost(window.height - bottom) ?: (window.height - bottom - base)
+    val textHeight = with(density) { (stackBottom - top - topGap).toDp() - 64.dp * (count - 1) }
         .coerceIn(56.dp, 200.dp)
     val tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     Popup(popupPositionProvider = position,
@@ -218,7 +246,7 @@ private fun FloatingNotice(host: Any, shown: AppMessages.Message, expanded: Bool
                         val arcSize = Size(size.width - stroke, size.height - stroke)
                         drawArc(tint.copy(alpha = 0.12f), -90f, 360f, false,
                             topLeft = Offset(inset, inset), size = arcSize, style = Stroke(stroke))
-                        drawArc(tint.copy(alpha = if (expanded) 0.35f else 0.8f), -90f, 360f * shown.remaining, false,
+                        drawArc(tint.copy(alpha = if (shown.paused || interacting) 0.35f else 0.8f), -90f, 360f * shown.remaining, false,
                             topLeft = Offset(inset, inset), size = arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
                     }
                     IconButton(onClick = { AppMessages.toggle(shown.id) }, interactionSource = interaction,
@@ -230,19 +258,25 @@ private fun FloatingNotice(host: Any, shown: AppMessages.Message, expanded: Bool
                 if (expanded) {
                     Text(shown.text, style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f).heightIn(max = textHeight)
-                            .verticalScroll(rememberScrollState()).padding(vertical = 16.dp)
-                            .then(if (shown.onTap != null) Modifier.clickable(onClickLabel = shown.tapLabel) {
-                                AppMessages.dismiss(shown.id)
-                                shown.onTap.invoke()
-                            } else Modifier))
+                            .verticalScroll(scroll)
+                            .clickable(interactionSource = interaction, indication = LocalIndication.current,
+                                onClickLabel = timerAction) { AppMessages.togglePause(shown.id) }
+                            .semantics { stateDescription = timerLabel }
+                            .padding(start = 12.dp, end = 8.dp, top = 16.dp, bottom = 16.dp))
                     Row(Modifier.padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = ::copy) {
+                        if (canCopy) IconButton(onClick = ::copy, interactionSource = interaction) {
                             Icon(painterResource(R.drawable.copy), stringResource(R.string.ui_copy_message))
+                        }
+                        if (shown.onTap != null) IconButton(onClick = {
+                            AppMessages.dismiss(shown.id)
+                            shown.onTap.invoke()
+                        }, interactionSource = interaction) {
+                            Icon(painterResource(R.drawable.reply), shown.tapLabel)
                         }
                         if (shown.action != null) IconButton(onClick = {
                             AppMessages.dismiss(shown.id)
                             shown.action.invoke()
-                        }) {
+                        }, interactionSource = interaction) {
                             Icon(painterResource(R.drawable.undo), shown.actionLabel)
                         }
                     }

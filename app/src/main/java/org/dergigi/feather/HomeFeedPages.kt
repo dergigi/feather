@@ -19,6 +19,10 @@ import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.semantics.Role
@@ -350,7 +354,16 @@ internal fun HomeFeedPages(vm: FeatherViewModel, navigation: ReaderNavigation, h
 
 @Composable
 internal fun FeatherComposeButton(onClick: () -> Unit, modifier: Modifier = Modifier, description: String = "Create post", showShadow: Boolean = true, picturePost: Boolean = false) {
-    FloatingActionButton(onClick = onClick, modifier = modifier,
+    val anchorOwner = remember { Any() }
+    val root = LocalView.current.rootView
+    DisposableEffect(anchorOwner) {
+        onDispose { AppMessages.clearComposeAnchor(anchorOwner) }
+    }
+    FloatingActionButton(onClick = onClick, modifier = modifier.onGloballyPositioned { coordinates ->
+        val bounds = coordinates.boundsInWindow()
+        AppMessages.composeAnchor.value = AppMessages.ComposeAnchor(anchorOwner, root,
+            IntRect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
+    },
         elevation = if (showShadow) FloatingActionButtonDefaults.elevation() else FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp, pressedElevation = 0.dp, focusedElevation = 0.dp, hoveredElevation = 0.dp),
         shape = CircleShape, containerColor = MaterialTheme.colorScheme.surfaceContainer) {

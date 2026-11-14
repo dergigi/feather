@@ -4,6 +4,15 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-11-14
+
+### Changed
+- Run notice countdowns in expanded and collapsed states; tap the message text to pause or resume. Keep draft recovery on its own icon and pause timers temporarily while interacting or backgrounded.
+- Add space between notice rings and text; show copy only when additional diagnostic details are available.
+
+### Fixed
+- Align the notice stack with the measured compose button position instead of a fixed screen offset, keeping a 12dp horizontal gap.
+
 ## [1.12.0] - 2026-11-14
 
 ### Added

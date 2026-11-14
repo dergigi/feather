@@ -239,5 +239,7 @@
     <string name="ui_collapse_message">Collapse message</string>
     <string name="ui_dismiss_message">Dismiss message</string>
     <string name="ui_notice_countdown_paused">Dismissal countdown paused</string>
-    <string name="ui_notice_countdown_running">Dismissal countdown running; expand to pause</string>
+    <string name="ui_notice_countdown_running">Dismissal countdown running; tap the text to pause</string>
+    <string name="ui_pause_notice_countdown">Pause dismissal countdown</string>
+    <string name="ui_resume_notice_countdown">Resume dismissal countdown</string>
 </resources>
