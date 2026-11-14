@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.10.8] - 2026-11-14
+
+### Fixed
+- Package density-specific bitmap launcher icons so APK extractors and Zapstore select Feather’s blue feather instead of an unrelated bundled client icon. Preserve the existing artwork and in-app/splash vectors.
+
 ## [1.10.7] - 2026-11-14
 
 ### Fixed
