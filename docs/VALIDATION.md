@@ -2207,3 +2207,13 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `94f84f9850fcd35593973c982d502cf29d2b10d9672c1b3ce04eea682e9db926` references asset `516dfc49d56cbe3138232f6aa5dc55922d057850f2996e0c034303784a79680e`; relay read-back verifies version, size, checksum and certificate. Public app page and catalog epoch 1111 include 1.12.0.
 - No website deployment.
 - Catalog epoch 1111 now embeds the correct blue-feather/white-stem icon, visually inspected; SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`. The previous purple server artifact is replaced. Existing Android-client cache refresh remains unverified; the upstream repair cause is unknown.
+
+
+## 2026-11-14 — 1.12.1 release
+
+- Source/tag `51091a4e5f1404beaeb0c06751548a61f534e6d9`; versionCode 246. Notices use the visible compose FAB's measured bounds, retain a 12dp horizontal gap, and add leading text spacing. Countdown runs expanded or collapsed; tapping text toggles pause/resume. Draft recovery has its own icon. Copy appears only for additional diagnostic details.
+- Signed optimized build passed in 31s. Package/version, expected signing certificate and extracted launcher pixels verified; mapping archived. No tests or emulators run. FAB alignment and gesture/timer behavior await manual device validation.
+- APK SHA-256 `46ac8325266b9a22a1410128dbdb0753eb48ca9c81da3410b8041c9d229a2fb8`; 16,458,709 bytes. GitHub asset digest and complete Zapstore CDN download match. Both GRASP release tags and GitHub tag verified.
+- Zapstore release `27d5ad972d8a4cbc43c2d1e823d8b33e49e9f50178759b384821a15b431d206b` references asset `40c89a45b5ba7bea9059241f0bcb9deb93f13a1f732032ac5305937dd431817e`; relay read-back confirms version, size, checksum and certificate. Public app page shows 1.12.1.
+- No website deployment.
+- Catalog epoch 1112 includes 1.12.1 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
