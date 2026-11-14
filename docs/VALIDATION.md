@@ -2227,3 +2227,13 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `cf0deb50e9292f93f1d4924f895641d446e8ce25666f42ff7931c977276e9d7f` references asset `2903b5b3805365ada4e6a0db2e7927a2f658f7e6a33f81a16c6a398f436dfb88`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.12.2.
 - No website deployment.
 - Catalog epoch 1113 includes 1.12.2 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## 2026-11-14 — 1.13.0 release
+
+- Source/tag `f18d818f110faa3e7ee68f400ff49e6ad967e9f7`; versionCode 248. Multiple note images share a horizontal carousel, with neutral page dots, a larger current dot, and shrinking edge dots. Images retain their proportions; tapping opens the selected photo fullscreen. Horizontal overflow stays within the carousel while vertical scrolling passes to the feed.
+- Signed optimized build passed in 30s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Carousel gestures, mixed aspect ratios and accessibility await manual device review.
+- APK SHA-256 `c4c15bbfe17479da974f906a7660ee2c84495e79c0126592e9ea9b725d2e7d15`; 16,459,553 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `22f088b6ec2ed9f136f7dbae7b8090516e6c6ecd47e20244ebf1ebf76e46a035` references asset `ed3903b07c2ae49e17fc1a239cd05151097ad32232f6c598726f8d881acc5ed3`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.13.0.
+- No website deployment.
+- Catalog epoch 1122 includes 1.13.0 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
