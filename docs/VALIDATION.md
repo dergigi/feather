@@ -2246,3 +2246,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `0d6a0f8cd934b1646590b90d0b4fbb2142bca376bfd6e2a5b2b003946f71e378`; 16,478,902 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
 - Zapstore release `91869274b11b26f1e43927e8758d76d77d6653bc07f0ec6eb3ec278e9ada3f8b` references asset `e6029329b3b4e0a3ff7a6dc9d94304759f0ce2b9e4caf5d23905269179f97b4a`. Relay read-back verifies version, size, checksum and signing certificate. Public app page and catalog epoch 1124 include 1.14.0; corrected icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`. No website deployment.
 - After release, asked the Feather agent by NIP-17 to reply to the Multiple images request. Its public kind-1111 reply `2dba452014c2d58dd00e312bb9940c12f23770dec94997e041ec7985f935a1d3` explains both layouts and the default. Marked issue `73d061125c0670c3dc6ea33e186a7c9e1f52bc4bfda3c6bd89fd406a07e33350` resolved through ngit; status accepted by eight relays.
+
+
+## 2026-11-14 — 1.14.1 release
+
+- Source/tag `ae52154f4afda29de6d581394f3a29adae7e8538`; versionCode 250. Replaced the photo-layout icon choices with a Carousel icon, visible label and standard accessible switch. Off shows stacked photos, remains the default and preserves existing saved choices. Removed unused choice icons and labels.
+- Signed optimized build passed in 32s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Settings appearance and interaction await manual device review.
+- APK SHA-256 `41c626319f24b8fc91334ab0d88e62274abafffc1835ed8efdf4424daf4ad92c`; 16,476,889 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `7ad20fd75963dad8a9517ea88aeac0fb09b056a4a42ac0efa17a11af01d59483` references asset `c70c80a7c37652528491c17566c264340c06c7df819e89a9ee0172fa003bab56`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.1. No website deployment.
+- Catalog epoch 1125 includes 1.14.1 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
