@@ -85,7 +85,7 @@ internal fun CopyableMessageHost() {
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val active = top === host && lifecycle.isAtLeast(Lifecycle.State.STARTED)
     val accessibility = LocalAccessibilityManager.current
-    var expanded by remember(message?.id) { mutableStateOf(false) }
+    var expanded by remember(message?.id) { mutableStateOf(true) }
     LaunchedEffect(message?.id, active, expanded) {
         val shown = message ?: return@LaunchedEffect
         if (!active || expanded) return@LaunchedEffect
@@ -108,8 +108,10 @@ internal fun CopyableMessageHost() {
     Popup(alignment = Alignment.BottomStart,
         properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false)) {
         BoxWithConstraints(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 80.dp)) {
-            val expandedWidth = maxWidth.coerceAtMost(560.dp)
+            // Match the compose FAB's 24dp edge inset and 80dp bottom offset.
+            // Reserve its 56dp diameter plus a 12dp gap, including during expansion.
+            .padding(start = 24.dp, end = 24.dp + 56.dp + 12.dp, top = 16.dp, bottom = 80.dp)) {
+            val expandedWidth = maxWidth
             Surface(shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shadowElevation = 6.dp,
@@ -136,7 +138,7 @@ internal fun CopyableMessageHost() {
                                     AppMessages.dismiss(shown.id)
                                     shown.onTap.invoke()
                                 } else Modifier))
-                        Column(Modifier.padding(end = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(Modifier.padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = ::copy) {
                                 Icon(painterResource(R.drawable.copy), stringResource(R.string.ui_copy_message))
                             }

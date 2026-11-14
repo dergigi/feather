@@ -4,6 +4,13 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-11-14
+
+### Changed
+- Open new info and warning messages expanded by default; tap their leading icon to collapse them.
+- Place message copy and undo buttons side by side instead of stacking them vertically.
+- Stop expanded messages 12dp before the compose button so it remains visible and tappable.
+
 ## [1.11.0] - 2026-11-14
 
 ### Changed
