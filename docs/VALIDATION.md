@@ -2196,3 +2196,4 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `6209f3754ae165dced039954c4ff7b807d6778600af07c06f43968e7c8f3e6f8`; 16,456,557 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
 - Zapstore release `64cce73dbb77135a8cfa5d25eae28b54d7a564fa8e1dfc7717070035c0555672` references asset `a612e3834895da0c6c45fcd1ca19b3419f0367b3e4f8464ca558daa2f1bbe0ba`. Relay read-back confirms version, size, checksum and signing certificate; public app page shows 1.11.1.
 - No website deployment. Store artwork repair is outside this change.
+- Catalog epoch 1105 includes the 1.11.1 release and asset. The processed icon still hashes to `3e6ed5fd4354fb44a3de9964864f3dac31af4ab637c6c83d1590549d619247ac`; the separate upstream artwork issue persists.
