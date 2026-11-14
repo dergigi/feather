@@ -2197,3 +2197,13 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release `64cce73dbb77135a8cfa5d25eae28b54d7a564fa8e1dfc7717070035c0555672` references asset `a612e3834895da0c6c45fcd1ca19b3419f0367b3e4f8464ca558daa2f1bbe0ba`. Relay read-back confirms version, size, checksum and signing certificate; public app page shows 1.11.1.
 - No website deployment. Store artwork repair is outside this change.
 - Catalog epoch 1105 includes the 1.11.1 release and asset. The processed icon still hashes to `3e6ed5fd4354fb44a3de9964864f3dac31af4ab637c6c83d1590549d619247ac`; the separate upstream artwork issue persists.
+
+
+## 2026-11-14 — 1.12.0 release
+
+- Source/tag `6456aab01e27963e9e24aee0ad3d5f3fa108d94b`; versionCode 245. Up to three independent notices with countdown rings, latest expanded, bounded duplicate merging, and copy preserving undo. Names identify unfollow targets; follow, mute, zap, delete, vote and account-report failures include action/target context and retain full target identifiers and diagnostics when copied.
+- Final signed optimized build passed in 30s after the contextual error wording was included. Signature/certificate, package/version and extracted launcher verified; mapping archived. No tests or emulators run. Stack positioning, countdowns and interaction behavior await manual device review.
+- APK SHA-256 `780a0ba5f8da09eae4e55a345c83861623ef013c2ffa48523799a7400e3e1ed8`; 16,457,673 bytes. GitHub asset digest and complete Zapstore CDN download match. Both GRASP tags and GitHub tag verified.
+- Zapstore release `94f84f9850fcd35593973c982d502cf29d2b10d9672c1b3ce04eea682e9db926` references asset `516dfc49d56cbe3138232f6aa5dc55922d057850f2996e0c034303784a79680e`; relay read-back verifies version, size, checksum and certificate. Public app page and catalog epoch 1111 include 1.12.0.
+- No website deployment.
+- Catalog epoch 1111 now embeds the correct blue-feather/white-stem icon, visually inspected; SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`. The previous purple server artifact is replaced. Existing Android-client cache refresh remains unverified; the upstream repair cause is unknown.

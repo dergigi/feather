@@ -1,5 +1,9 @@
 # Zapstore catalog icon mismatch — 2026-11-14
 
+## Latest status: catalog artwork corrected
+
+During 1.12.0 release verification on 2026-11-14, catalog epoch **1111** (delta from 1110) contains the correct blue feather with white stem, visually inspected after extraction. The processed `org.dergigi.feather/icon.webp` now hashes to `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`. The prior incorrect purple artifact is replaced. The upstream cause/repair is not established, and existing Android-client cache refresh has not been verified. The evidence below records the earlier unresolved state.
+
 Feather 1.10.9 (242) is published, but Zapstore's catalog still distributes an unrelated purple bird as its icon. This is reproducible without the Android client.
 
 ## Evidence
