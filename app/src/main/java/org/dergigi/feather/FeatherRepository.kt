@@ -231,6 +231,10 @@ class FeatherRepository(context: Context) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Event>?) = size > 128
     }
     private val eventLookupChanges = Channel<Unit>(Channel.CONFLATED)
+    // Profile merges are coalesced: per-event state emissions during a scroll burst would
+    // recompose every rendered note for each name instead of once per batch.
+    private val profileMergeWake = Channel<Unit>(Channel.CONFLATED)
+    private val pendingProfileMerges = java.util.concurrent.ConcurrentHashMap<String, Profile>()
     // Repository monitor owns network state; all readers share this one subscription.
     private var pendingEventLookups: Map<String, Set<String>> = emptyMap()
     private val eventIdPattern = Regex("[0-9a-f]{64}")
@@ -403,6 +407,13 @@ class FeatherRepository(context: Context) {
             }
         }
         scope.launch { ready.await(); threadChanges.sample(150).collect { refreshConversation() } }
+        scope.launch {
+            ready.await()
+            for (ignored in profileMergeWake) {
+                delay(200)
+                flushPendingProfiles()
+            }
+        }
         scope.launch {
             ready.await()
             for (ignored in eventLookupChanges) {
@@ -661,7 +672,8 @@ class FeatherRepository(context: Context) {
         if (next != routingPool) {
             routingPool = next
             historyJob?.cancel()
-            client.unsubscribe("profiles")
+            // "profiles" is intentionally left alone here: it targets its own stable relay set,
+            // and NostrClient re-sends only the per-relay filters that actually changed.
         }
     }
     @Synchronized
@@ -829,6 +841,27 @@ class FeatherRepository(context: Context) {
             notificationKinds.map { kind -> Filter(kinds = listOf(kind), tags = mapOf("p" to listOf(owner)), limit = 100) }
         }, listener)
     }
+    /** Account metadata is the only reading-data subscription that resolves content names. */
+    private fun subscribeProfiles() {
+        if (!active) return
+        val targets = (listOfNotNull(state.value.publicKey, viewedProfile) + profileAuthors + detailAuthors.values.flatten().distinct().take(64)).distinct().take(160)
+        // A stable relay set: riding the rotating routing pool would restart this request before
+        // it finishes streaming every referenced author's latest kind-0, so names resolve slowly
+        // and the profile cache never fills. Metadata is well replicated on the seeds, the
+        // account's own relays and the profile archive; a viewed profile's write relays cover
+        // outbox publishers that only announce metadata there.
+        val relays = (state.value.relays + listOf("wss://purplepag.es") + relayLists[viewedProfile]?.write.orEmpty())
+            .distinct().filter(::healthy).take(10)
+        // Sorted targets keep the filters identical when the same authors reoccur in another
+        // order, so the client skips re-sending the request on snapshot churn.
+        val sorted = targets.sorted()
+        val metadata = relays.associate { url ->
+            url.normalizeRelayUrl() to sorted.chunked(16).map { Filter(authors = it, kinds = listOf(0), limit = it.size) }
+        }.filterValues { it.isNotEmpty() }
+        if (metadata.isEmpty()) client.unsubscribe("profiles")
+        else client.subscribe("profiles", metadata, listener)
+    }
+
     /** Small batches keep metadata filters within common relay request limits. */
     private fun subscribeReadingData() {
         if (!active) return
@@ -849,12 +882,7 @@ class FeatherRepository(context: Context) {
             client.subscribe("visible-deletions", routes.associate { it.normalizeRelayUrl() to filters }, listener)
         }
 
-        val targets = (listOfNotNull(state.value.publicKey, viewedProfile) + profileAuthors + detailAuthors.values.flatten().distinct().take(64)).distinct().take(160)
-        val metadata = routingPool.associate { url ->
-            url.normalizeRelayUrl() to targets.chunked(16).map { Filter(authors = it, kinds = listOf(0), limit = it.size) }
-        }.filterValues { it.isNotEmpty() }
-        if (metadata.isEmpty()) client.unsubscribe("profiles")
-        else client.subscribe("profiles", metadata, listener)
+        subscribeProfiles()
         if (engagementIds.isEmpty()) client.unsubscribe("engagement")
         else client.subscribe("engagement", (routingPool.filter { it != "wss://purplepag.es" } + if (engagementApps.isNotEmpty() || state.value.threadNotes.any { it.isAppDiscussion() }) listOf(ZAPSTORE_RELAY) else emptyList()).distinct().associate { url ->
             url.normalizeRelayUrl() to (engagementIds.chunked(6).flatMap { ids ->
@@ -1061,7 +1089,15 @@ class FeatherRepository(context: Context) {
                     return false
                 }
                 when (outcome) {
-                    IEventStore.InsertOutcome.Accepted -> verified[event.id] = true
+                    IEventStore.InsertOutcome.Accepted -> {
+                        verified[event.id] = true
+                        // Names must show promptly, but coalesced: one recomposition per batch,
+                        // not one per name, so a resolving scroll burst never stutters the feed.
+                        if (event.kind == 0 && active) {
+                            pendingProfileMerges[event.pubKey] = profileOf(event)
+                            profileMergeWake.trySend(Unit)
+                        }
+                    }
                     is IEventStore.InsertOutcome.Rejected -> {
                         val duplicate = outcome.reason.startsWith("duplicate:")
                         verified[event.id] = duplicate
@@ -1484,7 +1520,17 @@ class FeatherRepository(context: Context) {
         val authors = (listOfNotNull(key, viewedProfile) + visible.map { it.pubKey } +
             refs.filter { it.profile }.map { it.id } + refs.mapNotNull { it.author } + embedded.values.map { it.pubKey } +
             embedded.values.flatMap(NostrContent::references).filter { it.profile }.map { it.id } + detailAuthors.values.flatten().distinct().take(64) + pollVoterAuthors + activity.filter { it.kind == 9735 }.mapNotNull { it.tagValue("p") }.take(24)).distinct().take(160)
+        val priorAuthors = profileAuthors
         val profiles = cachedProfiles(authors)
+        if (priorAuthors.toSet() != authors.toSet()) {
+            profileAuthors = authors
+            // Referenced names must not wait on engagement counting or the rest of the snapshot.
+            if (key == state.value.publicKey && profile == viewedProfile && thread == viewedThread && hashtag == viewedHashtag) {
+                _state.update { if (it.publicKey == key) it.copy(profiles = it.profiles + profiles) else it }
+            }
+            fetchNewProfiles(authors.filter { it !in profiles && it !in state.value.profiles })
+            if (active) subscribeProfiles()
+        }
         val counts = countTargets.associate { target ->
             var zappedByAccount: String? = null
             val stableActivity = countedActivity[target.id].orEmpty()
@@ -1537,10 +1583,9 @@ class FeatherRepository(context: Context) {
         rememberDeleted(embedded.values + all + profileEvents + hashtagNotes + notifications)
         deletionTargets = (visible + reposts + embedded.values).distinctBy { it.id }.filterNot(noteDeletions::hides).take(48)
         val packsChanged = emojiPackRequests != packs
-        val readingChanged = references != refs || profileAuthors != authors || packsChanged
+        val readingChanged = references != refs || priorAuthors != authors || packsChanged
         references = refs
         embeddedIds = quoteIds + addressRefs.map { it.id }
-        profileAuthors = authors
         if (key != _state.value.publicKey || profile != viewedProfile || tab != profileTab || hashtag != viewedHashtag || hashtagAuthor != viewedHashtagAuthor || hashtagTab != selectedHashtagTab || thread != viewedThread || ancestorLimit != threadAncestorLimit || requestedParent != threadRequestedParent || feed != selectedFeed || feedCeiling != feedUntil || profileCeiling != profileUntil || profileCount != profileLimit || hashtagCeiling != hashtagUntil || hashtagCount != hashtagLimit) { changed.tryEmit(Unit); return }
         emojiPackRequests = packs
         val lists = mutex.withLock { db.query<Event>(Filter(kinds = listOf(10002), limit = 1100)) }
@@ -1654,8 +1699,68 @@ class FeatherRepository(context: Context) {
         }
     }.flowOn(Dispatchers.IO)
 
-    private val zapProfileRequests = mutableMapOf<List<String>, Deferred<Map<String, Profile>>>()
+    /** A first look at an unknown referenced author rides the finite query lane, not the
+        rotating metadata subscription, so a fresh name resolves in one relay round trip. */
+    private val profileFetchCooldowns = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
+    private fun fetchNewProfiles(authors: List<String>) {
+        if (!active) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        val wanted = authors.filter { author ->
+            val last = profileFetchCooldowns[author]
+            last == null || now - last > 30_000
+        }.take(16)
+        if (wanted.isEmpty()) return
+        wanted.forEach { profileFetchCooldowns[it] = now }
+        if (profileFetchCooldowns.size > 1024) profileFetchCooldowns.entries.removeAll { now - it.value > 300_000 }
+        scope.launch {
+            val routes = (state.value.relays + listOf("wss://purplepag.es")).distinct().filter(::healthy).take(6)
+            val filters = wanted.chunked(16).map { chunk -> Filter(authors = chunk, kinds = listOf(0), limit = chunk.size) }
+            try {
+                withTimeoutOrNull(15_000) {
+                    accountQueries.completed(routes, filters.map { it.toJson() }) { relay, event ->
+                        filters.any { it.match(event) } && accept(event, seenAt = relay)
+                    }
+                }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) {
+                android.util.Log.w("FeatherRepository", "Could not fetch profile metadata", e)
+            }
+        }
+    }
+
+    /** Render-time lookup: a note can be on screen before the snapshot pass merges its
+        referenced names into state. Cache first; unknown keys fall to the bounded fetch lane. */
+    private fun flushPendingProfiles() {
+        if (pendingProfileMerges.isEmpty() || !active) return
+        val batch = buildMap {
+            pendingProfileMerges.keys.forEach { key -> pendingProfileMerges.remove(key)?.let { put(key, it) } }
+        }
+        if (batch.isNotEmpty()) _state.update { it.copy(profiles = it.profiles + batch) }
+    }
+
+    private val requestedProfileLookups = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+
+    fun requestProfiles(keys: Collection<String>) {
+        val wanted = keys.filter { key -> key.length == 64 && key !in state.value.profiles && requestedProfileLookups.add(key) }.take(64)
+        if (wanted.isEmpty()) return
+        scope.launch {
+            try {
+                ready.await()
+                val found = cachedProfiles(wanted)
+                // Through the shared coalescing buffer: a fling that composes many notes at once
+                // must produce one merged recomposition, not one per note.
+                if (found.isNotEmpty()) {
+                    pendingProfileMerges.putAll(found)
+                    profileMergeWake.trySend(Unit)
+                }
+                fetchNewProfiles(wanted.filter { it !in found })
+            } catch (e: CancellationException) { throw e } catch (e: Exception) {
+                android.util.Log.w("FeatherRepository", "Could not resolve profile metadata", e)
+            } finally { wanted.forEach { requestedProfileLookups.remove(it) } }
+        }
+    }
+
+    private val zapProfileRequests = mutableMapOf<List<String>, Deferred<Map<String, Profile>>>()
     /** Resolve kind-0 metadata before a new payment, independently of UI profile refresh. */
     internal suspend fun zapRecipientProfiles(note: Event): Map<String, Profile> = withContext(Dispatchers.IO) {
         ready.await()
@@ -1723,21 +1828,23 @@ class FeatherRepository(context: Context) {
 
     private suspend fun cachedProfiles(authors: List<String>): Map<String, Profile> = if (authors.isEmpty()) emptyMap() else mutex.withLock {
             db.query<Event>(Filter(kinds = listOf(0), authors = authors, limit = authors.size))
-        }.associate { event ->
-            val data = runCatching { JSONObject(event.content) }.getOrNull()
-            val about = data?.optString("about").orEmpty().take(2000).withoutObjectMarkers()
-            event.pubKey to Profile(
-                data?.optString("display_name")?.takeIf { it.isNotBlank() } ?: data?.optString("name")?.takeIf { it.isNotBlank() } ?: shortKey(event.pubKey),
-                about,
-                MediaContent.secureUrl(data?.optString("picture")?.trim()),
-                data?.optString("name")?.trim()?.takeIf { it.isNotBlank() },
-                listOf("banner", "cover", "header").firstNotNullOfOrNull { field -> MediaContent.secureUrl(data?.optString(field)?.trim()) },
-                data?.optString("lud16")?.takeIf { it.isNotBlank() } ?: data?.optString("lud06")?.takeIf { it.isNotBlank() },
-                NostrContent.tokens(about, event),
-                (data?.opt("nip05") as? String)?.trim()?.takeIf { it.isNotEmpty() }?.take(512),
-                profileWebsite(data?.opt("website") as? String),
-            )
-        }
+        }.associate { event -> event.pubKey to profileOf(event) }
+
+    private fun profileOf(event: Event): Profile {
+        val data = runCatching { JSONObject(event.content) }.getOrNull()
+        val about = data?.optString("about").orEmpty().take(2000).withoutObjectMarkers()
+        return Profile(
+            data?.optString("display_name")?.takeIf { it.isNotBlank() } ?: data?.optString("name")?.takeIf { it.isNotBlank() } ?: shortKey(event.pubKey),
+            about,
+            MediaContent.secureUrl(data?.optString("picture")?.trim()),
+            data?.optString("name")?.trim()?.takeIf { it.isNotBlank() },
+            listOf("banner", "cover", "header").firstNotNullOfOrNull { field -> MediaContent.secureUrl(data?.optString(field)?.trim()) },
+            data?.optString("lud16")?.takeIf { it.isNotBlank() } ?: data?.optString("lud06")?.takeIf { it.isNotBlank() },
+            NostrContent.tokens(about, event),
+            (data?.opt("nip05") as? String)?.trim()?.takeIf { it.isNotEmpty() }?.take(512),
+            profileWebsite(data?.opt("website") as? String),
+        )
+    }
 
     private suspend fun trimCache() = mutex.withLock { trimCacheLocked() }
     private suspend fun trimCacheLocked() {
@@ -2477,9 +2584,13 @@ class FeatherRepository(context: Context) {
                         listOfNotNull(tab.takeIf { events.any(tab::matches) })).distinct().sortedBy { it.profileOrderPriority })
             }
             // Author metadata is optional: make cached content visible before querying it.
+            // Biography links resolve in the same cache pass, so linked names never wait on relays.
             val profiles = cachedProfiles((listOf(author) + events.take(24).map { it.pubKey }).distinct())
             ensureActive()
-            if (current()) _state.update { if (current()) it.copy(profiles = it.profiles + profiles) else it }
+            val linked = profiles[author]?.aboutTokens.orEmpty()
+                .mapNotNull { token -> token.reference?.takeIf { it.profile }?.id }.distinct().take(32)
+            val resolved = if (linked.isEmpty()) profiles else profiles + cachedProfiles(linked)
+            if (current()) _state.update { if (current()) it.copy(profiles = it.profiles + resolved) else it }
         }
     }
 
