@@ -101,7 +101,7 @@ private fun ArticleLinkText(content: String, node: ASTNode, style: TextStyle, he
                     if (before.text.isNotBlank()) ArticleAnnotatedText(before, style)
                 }
                 val reference = token.reference!!
-                EmbeddedNote(reference, embeds.state.embedded[reference.id], embeds.state.profiles,
+                EmbeddedNote(reference, embeds.state.embedded[reference.id], embeds.state.profiles, reference.id in embeds.state.unavailableEmbeds,
                     embeds.event.id, embeds.onReference)
                 cursor = token.end
             }

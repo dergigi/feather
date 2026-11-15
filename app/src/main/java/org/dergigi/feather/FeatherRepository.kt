@@ -65,6 +65,7 @@ data class FeedState(
     val hashtagCategories: List<ProfileTab> = emptyList(),
     val profiles: Map<String, Profile> = emptyMap(),
     val embedded: Map<String, Event> = emptyMap(),
+    val unavailableEmbeds: Set<String> = emptySet(),
     val pendingVotes: Set<String> = emptySet(),
     val issueStatuses: Map<String, Int> = emptyMap(),
     val pollResults: Map<String, PollResults> = emptyMap(),
@@ -322,6 +323,12 @@ class FeatherRepository(context: Context) {
         }
         override fun onEose(relay: NormalizedRelayUrl, forFilters: List<Filter>?) {
             threadProgress.completed(relay.url, forFilters)
+            val lookupIds = forFilters?.flatMap { filter -> filter.ids.orEmpty() }.orEmpty()
+            if (lookupIds.isNotEmpty()) synchronized(eosedLookupRoutes) {
+                lookupIds.forEach { id -> eosedLookupRoutes.getOrPut(id) { mutableSetOf() }.add(relay.url) }
+                // The final EOSE may confirm absence: re-evaluate, or the pill stays "looking".
+                eventLookupChanges.trySend(Unit)
+            }
             unavailableUntil.remove(Protocol.relay(relay.url) ?: relay.url)
             if (viewingNotifications && forFilters?.any { it.authors == null && it.tags?.get("p") == listOf(state.value.publicKey) && it.kinds?.any { kind -> kind in notificationKinds } == true } == true)
                 _state.update { it.copy(notificationsLoading = false) }
@@ -521,7 +528,7 @@ class FeatherRepository(context: Context) {
         }
     }
     @Synchronized
-    fun background() { active = false; stopProfileSweep(); foregroundActive.value = false; blocktime.stop(); zapVerification.stop(); discoveryJob?.cancel(); historyJob?.cancel(); threadParentJob?.cancel(); refreshTimeout?.cancel(); pendingEventLookups = emptyMap(); client.unsubscribe("event-ids"); client.disconnect(); _state.update { it.copy(connected = emptySet(), loading = false) } }
+    fun background() { active = false; stopProfileSweep(); foregroundActive.value = false; blocktime.stop(); zapVerification.stop(); discoveryJob?.cancel(); historyJob?.cancel(); threadParentJob?.cancel(); refreshTimeout?.cancel(); pendingEventLookups = emptyMap(); synchronized(eosedLookupRoutes) { eosedLookupRoutes.clear() }; confirmedMissingEvents = emptySet(); client.unsubscribe("event-ids"); client.disconnect(); _state.update { it.copy(connected = emptySet(), loading = false, unavailableEmbeds = emptySet()) } }
     fun refresh() {
         historyJob?.cancel()
         if (viewedThread != null) {
@@ -980,7 +987,96 @@ class FeatherRepository(context: Context) {
         embeddedIds.asSequence().filter(eventIdPattern::matches).take(24).forEach { id ->
             result[id] = result[id].orEmpty() + embeddedRelays
         }
+        synchronized(uiEmbeddedWants) {
+            uiEmbeddedWants.forEach { (id, relays) ->
+                result[id] = result[id].orEmpty() +
+                    (relays.mapNotNull(Protocol::relay).filter { it in routingPool }.ifEmpty { embeddedRelays }.toSet())
+            }
+        }
         return result.filterKeys { it !in state.value.deletedNotes }
+    }
+
+    /** Embedded events the reader is already showing resolve at render time through the same
+        shared cache-first path, instead of waiting for the snapshot to notice them. */
+    private val uiEmbeddedWants = object : LinkedHashMap<String, Set<String>>(32, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Set<String>>?) = size > 32
+    }
+
+    fun requestEmbeddedEvents(references: Collection<NostrContent.Reference>) {
+        var wake = false
+        val addresses = mutableListOf<NostrContent.Reference>()
+        synchronized(uiEmbeddedWants) {
+            references.forEach { ref ->
+                val id = ref.id
+                if (id in state.value.embedded || id in state.value.deletedNotes) return@forEach
+                if (ref.addressFilter() != null) { addresses.add(ref); return@forEach }
+                if (eventIdPattern.matches(id) && (ref.kind == null || ref.kind in readableKinds)) {
+                    // Wake even when already registered: pendingEventLookups is cleared on
+                    // background, and the reconcile re-reads the cache and re-requests.
+                    uiEmbeddedWants[id] = ref.relays.toSet()
+                    wake = true
+                }
+            }
+        }
+        if (addresses.isNotEmpty()) scope.launch { resolveEmbeddedAddresses(addresses.take(16)) }
+        if (wake) eventLookupChanges.trySend(Unit)
+    }
+
+    private val embeddedAddressCooldowns = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /** Cached addressables render at once; uncached ones get one bounded targeted fetch. */
+    private suspend fun resolveEmbeddedAddresses(refs: List<NostrContent.Reference>) {
+        val cached = mutex.withLock {
+            refs.mapNotNull { ref ->
+                val filter = ref.addressFilter() ?: return@mapNotNull null
+                db.query<Event>(filter).maxWithOrNull(compareBy<Event> { it.createdAt }.thenBy { it.id })?.let { ref.id to it }
+            }.toMap()
+        }
+        if (cached.isNotEmpty()) {
+            confirmedMissingAddresses.removeAll(cached.keys)
+            if (active) {
+                _state.update { it.copy(embedded = (it.embedded + cached).entries.toList().takeLast(128).associate { entry -> entry.toPair() }) }
+                changed.tryEmit(Unit)
+                publishMissingEmbeds()
+            }
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        val missing = refs.filter { ref ->
+            val last = embeddedAddressCooldowns[ref.id]
+            ref.id !in cached && ref.id !in state.value.embedded && (last == null || now - last > 60_000)
+        }.take(8)
+        if (missing.isEmpty() || !active) { publishMissingEmbeds(); return }
+        missing.forEach { embeddedAddressCooldowns[it.id] = now }
+        if (embeddedAddressCooldowns.size > 512) embeddedAddressCooldowns.entries.removeAll { now - it.value > 600_000 }
+        val routes = (missing.flatMap { it.relays } + state.value.relays + RelayDefaults.seeds.take(2)).mapNotNull(Protocol::relay).distinct().filter(::healthy).take(6)
+        val filters = missing.mapNotNull { it.addressFilter()?.toJson() }
+        try {
+            // Only relays that answered EOSE confirm absence; a timed-out lane stays "looking".
+            val completed = withTimeoutOrNull(12_000) {
+                accountQueries.completed(routes, filters) { relay, event ->
+                    event.kind in readableKinds && missing.any { it.addressFilter()?.match(event) == true } && accept(event, seenAt = relay)
+                }
+            }
+            if (completed != null && completed.containsAll(routes.mapNotNull(Protocol::relay))) {
+                confirmedMissingAddresses.addAll(missing.map { it.id })
+                publishMissingEmbeds()
+            }
+            resolveEmbeddedAddresses(missing)
+        } catch (e: CancellationException) { throw e } catch (e: Exception) {
+            android.util.Log.w("FeatherRepository", "Could not fetch embedded addressable", e)
+        }
+    }
+
+    // A relay that answers EOSE without the event has confirmed it holds nothing; the id is
+    // only "unavailable" once every routed relay has done so. Until then the reader is looking.
+    private val eosedLookupRoutes = java.util.concurrent.ConcurrentHashMap<String, MutableSet<String>>()
+    private val confirmedMissingAddresses = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    private var confirmedMissingEvents: Set<String> = emptySet()
+
+    private fun publishMissingEmbeds() {
+        if (!active) return
+        val missing = confirmedMissingEvents + confirmedMissingAddresses
+        if (missing != state.value.unavailableEmbeds) _state.update { it.copy(unavailableEmbeds = missing) }
     }
 
     private suspend fun reconcileEventLookups(retryId: String? = null) = mutex.withLock {
@@ -997,6 +1093,15 @@ class FeatherRepository(context: Context) {
             if (retryId != null && retryId in pendingEventLookups) client.unsubscribe("event-ids")
             sendEventLookups()
         }
+        // A pending id whose every routed relay has answered EOSE is confirmed absent.
+        val confirmed = synchronized(eosedLookupRoutes) {
+            if (eosedLookupRoutes.size > 256) eosedLookupRoutes.keys.retainAll(pendingEventLookups.keys + confirmedMissingEvents)
+            pendingEventLookups.keys.filter { id ->
+                val routes = pendingEventLookups[id].orEmpty()
+                routes.isNotEmpty() && eosedLookupRoutes[id].orEmpty().containsAll(routes)
+            }.toSet().also { confirmedMissingEvents = it }
+        }
+        publishMissingEmbeds()
         // Let every consumer render the same cached copy, even if it came from another screen.
         val readable = cached.filterValues { it.kind in readableKinds }
         if (readable.any { (id, event) -> state.value.embedded[id]?.id != event.id }) {
