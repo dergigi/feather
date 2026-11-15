@@ -40,7 +40,7 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
         vm.repo.accountProfiles(listOf(current.owner, current.target))
     }.collectAsStateWithLifecycle(emptyMap())
     val profile = profiles[current.target] ?: state.profiles[current.target]
-    val name = profile?.name ?: FeatherRepository.shortKey(current.target)
+    val name = profile?.name ?: FeatherRepository.shortNpub(current.target)
     ModalBottomSheet(onDismissRequest = reports::close,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         CopyableMessageHost()
@@ -50,7 +50,7 @@ internal fun AccountReportSheet(vm: FeatherViewModel) {
                 IconButton(onClick = reports::close) { Icon(Icons.Default.Close, stringResource(R.string.ui_close_report)) }
                 Spacer(Modifier.weight(1f))
                 val author = profiles[current.owner] ?: state.profiles[current.owner]
-                AccountAvatar(author?.name ?: FeatherRepository.shortKey(current.owner), 36, author?.picture)
+                AccountAvatar(author?.name ?: FeatherRepository.shortNpub(current.owner), 36, author?.picture)
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {

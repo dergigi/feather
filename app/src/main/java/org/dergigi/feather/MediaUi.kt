@@ -172,7 +172,7 @@ fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey:
                 if (attachment.kind == MediaContent.Kind.AUDIO) {
                     AudioPlayerContent("audio:${note.id}:${attachment.url}",
                         AudioInfo(attachment.url, attachment.mime, null, "", null, 0L, emptyList()),
-                        compact = true, author = FeatherRepository.shortKey(note.pubKey), sourceNote = note)
+                        compact = true, author = FeatherRepository.shortNpub(note.pubKey), sourceNote = note)
                 } else {
                 val videos = media.playback
                 val playback = videos?.clip(identity)

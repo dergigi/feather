@@ -98,7 +98,7 @@ internal fun HighlightContent(event: Event, profiles: Map<String, Profile>, comp
                             val ref = token.reference
                             if (ref != null) {
                                 withLink(LinkAnnotation.Clickable(ref.copyableLink(token.text), TextLinkStyles(linkStyle)) { currentNavigate(ref) }) {
-                                    append(if (ref.hashtag != null) token.text else if (ref.profile) "@${profiles[ref.id]?.name ?: FeatherRepository.shortKey(ref.id)}" else "↗ ${FeatherRepository.shortKey(ref.id)}")
+                                    append(if (ref.hashtag != null) token.text else if (ref.profile) "@${profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id)}" else "↗ ${FeatherRepository.shortNpub(ref.id)}")
                                 }
                             } else if (token.url != null) {
                                 withLink(LinkAnnotation.Url(token.url, TextLinkStyles(linkStyle))) { append(token.text) }
@@ -149,7 +149,7 @@ internal fun HighlightContent(event: Event, profiles: Map<String, Profile>, comp
                 withLink(LinkAnnotation.Clickable(source.reference?.copyableLink() ?: source.url ?: source.label, linkStyle) { source.reference?.let(currentNavigate) ?: source.url?.let(uriHandler::openUri) }) { append(source.label) }
                 if (author != null) {
                     append(" by ")
-                    withLink(LinkAnnotation.Clickable("nostr:${Protocol.npub(author)}", linkStyle) { currentNavigate(NostrContent.Reference(author, profile = true)) }) { append(profiles[author]?.name ?: FeatherRepository.shortKey(author)) }
+                    withLink(LinkAnnotation.Clickable("nostr:${Protocol.npub(author)}", linkStyle) { currentNavigate(NostrContent.Reference(author, profile = true)) }) { append(profiles[author]?.name ?: FeatherRepository.shortNpub(author)) }
                 }
             }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }

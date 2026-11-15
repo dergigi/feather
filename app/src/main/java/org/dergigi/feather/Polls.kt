@@ -199,7 +199,7 @@ private fun PollVotersSheet(poll: Poll, optionImages: Map<String, MediaContent.A
         LazyColumn(state = list, modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(ballots, key = { it.author }) { ballot ->
                 val profile = state.profiles[ballot.author]
-                val name = profile?.name ?: FeatherRepository.shortKey(ballot.author)
+                val name = profile?.name ?: FeatherRepository.shortNpub(ballot.author)
                 Row(Modifier.fillMaxWidth().clickable {
                     onDismiss()
                     onReference(NostrContent.Reference(ballot.author, profile = true))

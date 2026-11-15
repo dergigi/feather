@@ -160,7 +160,7 @@ class AudioPlayback internal constructor(private val context: Context) {
 }
 
 @Composable
-internal fun AudioContent(note: Event, compact: Boolean, author: String = FeatherRepository.shortKey(note.pubKey)) {
+internal fun AudioContent(note: Event, compact: Boolean, author: String = FeatherRepository.shortNpub(note.pubKey)) {
     val info by produceState<AudioInfo?>(null, note.id) { value = withContext(Dispatchers.Default) { audioInfo(note) } }
     val data = info ?: return
     AudioPlayerContent(note.id, data, compact, author, sourceNote = note)
