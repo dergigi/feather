@@ -7,6 +7,8 @@
     <string name="ui_add_zap_message">Zapにメッセージを追加</string>
     <string name="ui_already_sent">送信済み</string>
     <string name="ui_article_unavailable_locally_open_externally">記事が端末にないため外部で開きます</string>
+    <string name="ui_note_unavailable">ノートが端末にありません</string>
+    <string name="ui_looking_for_note">ノートを探しています</string>
     <string name="ui_attach_images_or_videos">画像または動画を添付</string>
     <string name="ui_attached_video">添付動画</string>
     <string name="ui_back">戻る</string>

@@ -25,7 +25,7 @@ internal fun ProfileMutedIndicator(vm: FeatherViewModel, target: String, onRevea
     val adding by vm.pendingAccountMutes.collectAsStateWithLifecycle()
     if (state.publicKey == null || target == state.publicKey ||
         (target !in state.mutedAuthors && target !in adding) || target in removing) return
-    val name = state.profiles[target]?.name ?: FeatherRepository.shortKey(target)
+    val name = state.profiles[target]?.name ?: FeatherRepository.shortNpub(target)
     IconButton(onClick = onReveal) {
         Icon(painterResource(R.drawable.account_hidden), stringResource(R.string.ui_muted_account_actions, name),
             Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error.copy(alpha = .8f))
@@ -57,13 +57,13 @@ internal fun MutedAccountsSheet(vm: FeatherViewModel, onDismiss: () -> Unit, onP
             if (keys.isNotEmpty()) LazyColumn(state = list, modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
                 items(keys, key = { it }) { key ->
                     val profile = profiles[key] ?: state.profiles[key]
-                    val name = profile?.name ?: FeatherRepository.shortKey(key)
+                    val name = profile?.name ?: FeatherRepository.shortNpub(key)
                     Row(Modifier.fillMaxWidth().clickable { onProfile(key) }.padding(start = 24.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Avatar(name, 40, profile?.picture)
                         Column(Modifier.weight(1f)) {
                             Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(profile?.nip05?.takeIf { it.isNotBlank() } ?: FeatherRepository.shortKey(key),
+                            Text(profile?.nip05?.takeIf { it.isNotBlank() } ?: FeatherRepository.shortNpub(key),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }

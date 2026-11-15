@@ -220,7 +220,7 @@ internal class ZapWallet(context: Context) {
             val child = sha256("${record.getString("batch")}:${recipient.pubkey}".toByteArray())
             if (recipient.pubkey !in done && store.payment(child) == null) {
                 val profile = profiles[recipient.pubkey]
-                    ?: error("Could not load the profile for split recipient ${FeatherRepository.shortKey(recipient.pubkey)}; no new payment sent")
+                    ?: error("Could not load the profile for split recipient ${FeatherRepository.shortNpub(recipient.pubkey)}; no new payment sent")
                 val name = noticeProfileName(recipient.pubkey, profiles)
                 if (profile.lightning.isNullOrBlank()) throw WalletFailure(
                     "$name's loaded profile has no Lightning address; no new payment sent", missingLightningRecipient = recipient.pubkey)

@@ -101,7 +101,7 @@ private fun ArticleLinkText(content: String, node: ASTNode, style: TextStyle, he
                     if (before.text.isNotBlank()) ArticleAnnotatedText(before, style)
                 }
                 val reference = token.reference!!
-                EmbeddedNote(reference, embeds.state.embedded[reference.id], embeds.state.profiles,
+                EmbeddedNote(reference, embeds.state.embedded[reference.id], embeds.state.profiles, reference.id in embeds.state.unavailableEmbeds,
                     embeds.event.id, embeds.onReference)
                 cursor = token.end
             }
@@ -137,7 +137,7 @@ private fun ArticleAnnotatedText(source: AnnotatedString, style: TextStyle, head
                     val start = length
                     withLink(LinkAnnotation.Clickable(ref.copyableLink(token.text),
                         TextLinkStyles(SpanStyle(color = linkColor))) { open?.invoke(ref) }) {
-                        append("@${embeds.state.profiles[ref.id]?.name ?: FeatherRepository.shortKey(ref.id)}")
+                        append("@${embeds.state.profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id)}")
                     }
                     // Preserve surrounding emphasis, font size and other Markdown styling.
                     source.spanStyles.filter { it.start < token.end && it.end > token.start }.forEach {

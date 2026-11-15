@@ -313,7 +313,7 @@ internal fun HomeFeedPages(vm: FeatherViewModel, navigation: ReaderNavigation, h
             if (state.publicKey != null) {
                 CompositionLocalProvider(LocalMedia provides MediaEnvironment(resources,
                     lifecycleState.isAtLeast(Lifecycle.State.STARTED), null)) {
-                    Avatar(account?.name ?: FeatherRepository.shortKey(state.publicKey!!), ACCOUNT_AVATAR_DP, account?.picture)
+                    Avatar(account?.name ?: FeatherRepository.shortNpub(state.publicKey!!), ACCOUNT_AVATAR_DP, account?.picture)
                 }
             } else Icon(painterResource(R.drawable.login), stringResource(R.string.ui_log_in), Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
         }

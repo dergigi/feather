@@ -302,7 +302,7 @@ internal fun ReplyComposer(vm: FeatherViewModel) {
         value = withContext(Dispatchers.Default) {
             profileMentionPattern.findAll(current.text).take(32).mapNotNull { match ->
                 NostrContent.decode(match.value)?.takeIf { it.profile }?.let { ref ->
-                    match.value to (chosenNames[ref.id] ?: state.profiles[ref.id]?.name ?: FeatherRepository.shortKey(ref.id))
+                    match.value to (chosenNames[ref.id] ?: state.profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id))
                 }
             }.toMap()
         }
@@ -437,7 +437,7 @@ internal fun ReplyComposer(vm: FeatherViewModel) {
                 IconButton(onClick = vm::closeReply) { Icon(Icons.Default.Close, stringResource(R.string.ui_close_and_keep_draft)) }
                 Spacer(Modifier.weight(1f))
                 val account = state.profiles[current.owner]
-                val name = account?.name ?: FeatherRepository.shortKey(current.owner)
+                val name = account?.name ?: FeatherRepository.shortNpub(current.owner)
                 val postingAs = stringResource(R.string.ui_posting_as, name)
                 Box(Modifier.size(48.dp).clearAndSetSemantics { contentDescription = postingAs },
                     contentAlignment = Alignment.Center) {
@@ -446,7 +446,7 @@ internal fun ReplyComposer(vm: FeatherViewModel) {
             }
             current.target?.let { target ->
                 val profile = state.profiles[target.pubKey]
-                ReplyContextRow(target, profile?.name ?: FeatherRepository.shortKey(target.pubKey))
+                ReplyContextRow(target, profile?.name ?: FeatherRepository.shortNpub(target.pubKey))
             }
             if (current.picturePost) {
                 attachments()

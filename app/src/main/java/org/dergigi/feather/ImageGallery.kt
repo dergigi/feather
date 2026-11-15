@@ -290,7 +290,7 @@ private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<St
                 IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, stringResource(R.string.ui_close_gallery), tint = foreground) }
                 currentNote?.let { note ->
                     val author = state.profiles[note.pubKey]
-                    val name = author?.name ?: FeatherRepository.shortKey(note.pubKey)
+                    val name = author?.name ?: FeatherRepository.shortNpub(note.pubKey)
                     IconButton(onClick = { onOpenProfile(note.pubKey) },
                         modifier = Modifier.semantics { contentDescription = "Open $name’s profile" }) {
                         Avatar(name, size = 36, picture = author?.picture)

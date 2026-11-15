@@ -86,13 +86,13 @@ private fun notificationText(text: String, event: Event, profiles: Map<String, P
             val ref = token.reference
             when {
                 ref == null || ref.hashtag != null -> append(token.text)
-                ref.profile -> append("@${profiles[ref.id]?.name ?: FeatherRepository.shortKey(ref.id)}")
+                ref.profile -> append("@${profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id)}")
                 else -> {
                     val target = embedded[ref.id]?.takeUnless { filter.hides(ref) || filter.hides(it) }
                     val author = target?.pubKey ?: ref.author
-                    val name = author?.let { profiles[it]?.name ?: FeatherRepository.shortKey(it) }
+                    val name = author?.let { profiles[it]?.name ?: FeatherRepository.shortNpub(it) }
                     append("↗ ")
-                    append(name?.let { "@$it" } ?: FeatherRepository.shortKey(ref.id))
+                    append(name?.let { "@$it" } ?: FeatherRepository.shortNpub(ref.id))
                     if (includeExcerpt && target != null) {
                         val excerpt = target.tagValue("title")
                             ?: MediaContent.text(target, MediaContent.attachments(target, 32))

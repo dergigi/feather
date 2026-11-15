@@ -194,7 +194,7 @@ class VisibleVideoPlayer(
                 override fun onPlayerError(error: PlaybackException) { onError(url) }
             })
             val app = context.applicationContext as FeatherApplication
-            val author = sourceNote?.let { app.repository.state.value.profiles[it.pubKey]?.name ?: FeatherRepository.shortKey(it.pubKey) }
+            val author = sourceNote?.let { app.repository.state.value.profiles[it.pubKey]?.name ?: FeatherRepository.shortNpub(it.pubKey) }
             val title = sourceNote?.tagValue("title")?.take(160)
                 ?: sourceNote?.content?.take(2048)?.lineSequence()?.firstOrNull { it.isNotBlank() && !it.trim().startsWith("https://") }?.take(160)
                 ?: context.getString(R.string.ui_video)
