@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.14.4] - 2026-11-15
+
+### Changed
+- Shorten missing-Lightning-address notices to “Can't zap [name] (no Lightning address)”; keep the amount, note context and technical details in the copyable report.
+
 ## [1.14.3] - 2026-11-15
 
 ### Fixed

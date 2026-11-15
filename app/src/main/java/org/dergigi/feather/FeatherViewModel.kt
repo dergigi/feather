@@ -317,7 +317,13 @@ class FeatherViewModel(application: Application) : AndroidViewModel(application)
             }
             catch (failure: TimeoutCancellationException) { showNoticeFailure(operation, failure, note.id, "Payment not confirmed. Check your wallet; tap the same zap again to check payment status.") }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: WalletFailure) { showNoticeFailure(operation, failure, note.id, failure.message ?: "Zap failed", failure.report ?: failure.stackTraceToString()) }
+            catch (failure: WalletFailure) {
+                val summary = failure.missingLightningRecipient?.let { recipient ->
+                    getApplication<Application>().getString(R.string.ui_cannot_zap_no_lightning, noticeProfileName(recipient, state.value.profiles))
+                }
+                showNoticeFailure(operation, failure, note.id, failure.message ?: "Zap failed",
+                    failure.report ?: failure.stackTraceToString(), displayText = summary)
+            }
             catch (failure: Exception) { showNoticeFailure(operation, failure, note.id, walletErrorReason(failure)) }
             finally {
                 if (zapJobs[request] === currentCoroutineContext().job) {

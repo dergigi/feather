@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ui_cannot_zap_no_lightning">Can\'t zap %1$s (no Lightning address)</string>
     <string name="ui_photo_carousel">Carousel</string>
     <string name="ui_image_page">Image %1$d of %2$d</string>
     <string name="ui_open_image_gallery">Open image gallery</string>

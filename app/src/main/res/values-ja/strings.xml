@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ui_cannot_zap_no_lightning">%1$sにZapできません（Lightningアドレスがありません）</string>
     <string name="ui_post_pending">リレーの確認を待っています</string>
     <string name="ui_hashtag_by_author">%2$sの #%1$s</string>
     <string name="ui_posting_as">投稿者: %1$s</string>

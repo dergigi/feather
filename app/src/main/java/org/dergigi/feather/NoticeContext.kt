@@ -22,7 +22,7 @@ internal fun noticeEventContext(note: Event, profiles: Map<String, Profile>, typ
 
 internal fun showNoticeFailure(context: String, error: Throwable, target: String,
     reason: String = error.message?.takeIf(String::isNotBlank) ?: error.javaClass.simpleName,
-    diagnostics: String = error.stackTraceToString()) {
+    diagnostics: String = error.stackTraceToString(), displayText: String? = null) {
     val text = "$context: $reason"
-    AppMessages.show(text, "$text\n\nTarget: $target\n\n$diagnostics")
+    AppMessages.show(displayText ?: text, "$text\n\nTarget: $target\n\n$diagnostics")
 }

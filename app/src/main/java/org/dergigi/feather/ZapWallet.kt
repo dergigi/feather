@@ -222,7 +222,8 @@ internal class ZapWallet(context: Context) {
                 val profile = profiles[recipient.pubkey]
                     ?: error("Could not load the profile for split recipient ${FeatherRepository.shortKey(recipient.pubkey)}; no new payment sent")
                 val name = noticeProfileName(recipient.pubkey, profiles)
-                require(!profile.lightning.isNullOrBlank()) { "$name's loaded profile has no Lightning address; no new payment sent" }
+                if (profile.lightning.isNullOrBlank()) throw WalletFailure(
+                    "$name's loaded profile has no Lightning address; no new payment sent", missingLightningRecipient = recipient.pubkey)
                 require(addresses[index]?.let { LnurlForm.toUrl(it) } != null) { "$name's Lightning address is invalid; no new payment sent" }
             }
         }
@@ -248,7 +249,7 @@ internal class ZapWallet(context: Context) {
             val progress = "Split zap: ${done.size}/${splits.size} recipients confirmed"
             val report = (e as? WalletFailure)?.report ?: walletErrorText(e.stackTraceToString())
             throw WalletFailure("$progress. ${walletErrorReason(e)}", (e as? WalletFailure)?.code,
-                "$progress\nTotal: $amountSats sats\n$report")
+                "$progress\nTotal: $amountSats sats\n$report", missingLightningRecipient = (e as? WalletFailure)?.missingLightningRecipient)
         }
     }
 
@@ -333,7 +334,8 @@ internal class ZapWallet(context: Context) {
             // Only new payments need metadata. Journal recovery above must never wait on profiles
             // or turn a previous uncertain payment into a new payment attempt.
             val address = lightning?.takeIf(String::isNotBlank) ?: resolveLightning?.invoke()
-            require(!address.isNullOrBlank()) { "This recipient's loaded profile has no Lightning address" }
+            if (address.isNullOrBlank()) throw WalletFailure("This recipient's loaded profile has no Lightning address",
+                missingLightningRecipient = recipient)
             val endpoint = LnurlForm.toUrl(address) ?: error("This recipient's Lightning address is invalid")
             val lnurl = LnurlForm.urlToBech32(endpoint)
             diagnostics["Provider"] = endpoint.toHttpUrl().host
@@ -433,7 +435,8 @@ internal class ZapWallet(context: Context) {
                 // Sanitize each line, retaining stack layout without wallet secrets or invoices.
                 failure.stackTraceToString().take(24000).lineSequence().forEach { appendLine(walletErrorText(it)) }
             }
-            throw WalletFailure("$step: $reason$uncertainty", (failure as? WalletFailure)?.code, report)
+            throw WalletFailure("$step: $reason$uncertainty", (failure as? WalletFailure)?.code, report,
+                missingLightningRecipient = (failure as? WalletFailure)?.missingLightningRecipient)
         } finally { connection.secret.fill(0) }
     }
     /** Only schema information is copied, never a preimage or arbitrary response values. */
