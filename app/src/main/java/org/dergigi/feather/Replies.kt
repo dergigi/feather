@@ -430,7 +430,7 @@ internal fun ReplyComposer(vm: FeatherViewModel) {
     val composer: @Composable () -> Unit = {
         CopyableMessageHost()
         CompositionLocalProvider(LocalMedia provides MediaEnvironment(resources, foreground, null)) {
-        GalleryHost(state, walletConnected = false, onOpenNote = { _, _ -> }, onOpenProfile = {}) {
+        GalleryHost(state, walletConnected = false, onOpenNote = { _, _, _ -> }, onOpenProfile = {}) {
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = if (current.target == null) 152.dp else 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

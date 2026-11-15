@@ -47,6 +47,8 @@ internal class ReaderEntry(
         return after - before
     }
     var reference: NostrContent.Reference? = null
+    // One image hint for this visit, carried from the gallery's open-note action.
+    var galleryPhoto by mutableStateOf<String?>(null)
     var hashtagAuthor: String? = null
     // Event objects are shared with the repository, never serialized into saved instance state.
     val notes = mutableMapOf<ProfileTab, List<Event>>()
@@ -93,6 +95,7 @@ internal class ReaderNavigation(entries: List<ReaderEntry> = listOf(ReaderEntry(
                 putStringArrayList("threadExpanded", ArrayList(entry.expandedThreadParents))
                 putInt("threadAncestorLimit", entry.threadAncestorLimit)
                 if (entry.screen == "thread") {
+                    putString("galleryPhoto", entry.galleryPhoto)
                     val anchor = entry.list.layoutInfo.visibleItemsInfo.firstOrNull()?.key as? String
                     putString("threadAnchor", anchor ?: entry.threadRestoreAnchor?.first)
                     putInt("threadAnchorOffset", entry.threadRestoreAnchor?.second ?: entry.list.firstVisibleItemScrollOffset)
@@ -125,6 +128,7 @@ internal class ReaderNavigation(entries: List<ReaderEntry> = listOf(ReaderEntry(
                         }
                     }
                     entry.threadPositioned = bundle.getBoolean("threadPositioned")
+                    entry.galleryPhoto = bundle.getString("galleryPhoto")
                     entry.expandedThreadParents = bundle.getStringArrayList("threadExpanded").orEmpty().takeLast(64)
                     entry.threadAncestorLimit = bundle.getInt("threadAncestorLimit", INITIAL_THREAD_ANCESTORS)
                         .coerceIn(INITIAL_THREAD_ANCESTORS, MAX_THREAD_ANCESTORS)

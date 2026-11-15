@@ -72,13 +72,14 @@ import com.vitorpamplona.quartz.nip01Core.core.Event
 internal val LocalGalleryVisible = staticCompositionLocalOf { false }
 internal data class GallerySelection(val noteId: String?, val url: String)
 internal val LocalGallerySelection = compositionLocalOf<GallerySelection?> { null }
+internal val LocalInitialGallerySelection = compositionLocalOf<GallerySelection?> { null }
 internal class GalleryOpener(private val open: (List<String>, Int, Event?, Boolean) -> Unit) {
     operator fun invoke(images: List<String>, start: Int, note: Event? = null, expandAlbum: Boolean = true) = open(images, start, note, expandAlbum)
 }
 internal val LocalOpenGallery = staticCompositionLocalOf { GalleryOpener { _, _, _, _ -> } }
 
 @Composable
-internal fun GalleryHost(state: FeedState, walletConnected: Boolean, covered: Boolean = false, album: () -> ProfilePhotos = { ProfilePhotos() }, onOpenNote: (String, Event?) -> Unit, onOpenProfile: (String) -> Unit, onLogin: () -> Unit = {}, onWallet: () -> Unit = {}, content: @Composable () -> Unit) {
+internal fun GalleryHost(state: FeedState, walletConnected: Boolean, covered: Boolean = false, album: () -> ProfilePhotos = { ProfilePhotos() }, onOpenNote: (String, Event?, String) -> Unit, onOpenProfile: (String) -> Unit, onLogin: () -> Unit = {}, onWallet: () -> Unit = {}, content: @Composable () -> Unit) {
     var urls by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     var index by rememberSaveable { mutableIntStateOf(0) }
     var noteIds by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
@@ -132,9 +133,10 @@ internal fun GalleryHost(state: FeedState, walletConnected: Boolean, covered: Bo
             onOpenNote = { page ->
                 val id = noteIds.getOrNull(page)?.takeIf { it.isNotBlank() }
                 val note = sourceNotes.getOrNull(page)?.takeIf { it.id == id }
-                if (id != null) {
+                val imageUrl = urls.getOrNull(page)
+                if (id != null && imageUrl != null) {
                     urls = arrayListOf(); noteIds = arrayListOf(); sourceNotes = emptyList()
-                    onOpenNote(id, note)
+                    onOpenNote(id, note, imageUrl)
                 }
             })
     }

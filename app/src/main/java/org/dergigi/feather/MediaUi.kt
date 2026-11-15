@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -220,7 +221,10 @@ private val ImageCarouselScroll = object : NestedScrollConnection {
 
 @Composable
 private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attachment>, onOpen: (MediaContent.Attachment) -> Unit) {
-    val pager = rememberPagerState(pageCount = { images.size })
+    val initialUrl = LocalInitialGallerySelection.current?.takeIf { it.noteId == noteId }?.url
+    val initialPage = images.indexOfFirst { it.url == initialUrl }
+    val pager = rememberPagerState(initialPage = initialPage.coerceAtLeast(0), pageCount = { images.size })
+    var initialSelectionApplied by rememberSaveable(noteId, initialUrl) { mutableStateOf(false) }
     val gallerySelection = LocalGallerySelection.current
     val galleryPage = gallerySelection?.takeIf { it.noteId == noteId }
         ?.let { selection -> images.indexOfFirst { it.url == selection.url } } ?: -1
@@ -228,6 +232,12 @@ private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attach
         // Match by source and URL: profile galleries can contain photos from several notes.
         // Apply during layout rather than launching a scroll that dismissal could cancel.
         if (galleryPage >= 0 && pager.currentPage != galleryPage) pager.requestScrollToPage(galleryPage)
+        // Wait for attachment detection if necessary, then consume the navigation hint once.
+        // Subsequent swipes and restored pager positions must remain under the reader's control.
+        if (!initialSelectionApplied && initialPage >= 0) {
+            if (galleryPage < 0 && pager.currentPage != initialPage) pager.requestScrollToPage(initialPage)
+            initialSelectionApplied = true
+        }
     }
     val ratios = remember(images) {
         mutableStateMapOf(*images.map { it.url to (ImageRatios.get(it.url) ?: it.ratio) }.toTypedArray())

@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.14.3] - 2026-11-15
+
+### Fixed
+- Preserve the selected photo when opening its note with the comment button from a feed or profile gallery, positioning the note's carousel on that image.
+
 ## [1.14.2] - 2026-11-15
 
 ### Fixed

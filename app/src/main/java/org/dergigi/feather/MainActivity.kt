@@ -508,11 +508,15 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
         if (s.publicKey == null) showAccount = true
         else if (!walletConnected) showWallet = true
         else vm.zap(note, amount, message)
-    }, LocalReactionActions provides ReactionActions(pending = reacting, optimistic = optimisticReactions, choices = s.reactionChoices, recentEmojis = s.recentEmojis, customEmojis = s.customEmojis, remove = { note, choice -> vm.react(note, choice, remove = true) }) { note, choice ->
+    }, LocalInitialGallerySelection provides entry.galleryPhoto?.let { GallerySelection(entry.target, it) },
+        LocalReactionActions provides ReactionActions(pending = reacting, optimistic = optimisticReactions, choices = s.reactionChoices, recentEmojis = s.recentEmojis, customEmojis = s.customEmojis, remove = { note, choice -> vm.react(note, choice, remove = true) }) { note, choice ->
         if (s.publicKey == null) showAccount = true else vm.react(note, choice)
     }) {
     GalleryHost(state = s, walletConnected = walletConnected, covered = showAccount || showWallet || showSettings || composingReply != null, album = { if (screen in listOf("profile", "feed", "hashtag") && profileTab == ProfileTab.PHOTOS) entry.photos else ProfilePhotos() },
-        onOpenNote = { id, note -> if (note != null) openNote(note) else openReference(NostrContent.Reference(id)) },
+        onOpenNote = { id, note, imageUrl ->
+            if (note != null) openNote(note) else openReference(NostrContent.Reference(id))
+            navigation.current.takeIf { it.screen == "thread" && it.target == id }?.galleryPhoto = imageUrl
+        },
         onOpenProfile = ::openProfile, onLogin = { showAccount = true }, onWallet = { showWallet = true }) {
     MediaHost(mediaStore, reading = activePage && !showSettings && !showAccount && composingReply == null) {
     savedScreens.SaveableStateProvider(entry.key) {
