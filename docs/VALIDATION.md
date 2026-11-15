@@ -2255,3 +2255,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `41c626319f24b8fc91334ab0d88e62274abafffc1835ed8efdf4424daf4ad92c`; 16,476,889 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
 - Zapstore release `7ad20fd75963dad8a9517ea88aeac0fb09b056a4a42ac0efa17a11af01d59483` references asset `c70c80a7c37652528491c17566c264340c06c7df819e89a9ee0172fa003bab56`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.1. No website deployment.
 - Catalog epoch 1125 includes 1.14.1 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## 2026-11-15 — 1.14.2 release
+
+- Source/tag `2c862ddd1a5c203ee988df03fa7e2835d1d78679`; versionCode 251. Active gallery selection is shared with inline carousels by source note and image URL, retaining the viewed photo on dismissal. Translation errors preserve the translator's detected-but-unavailable language and display its localized name, with English/Japanese strings and a generic fallback when no language is reported.
+- Signed optimized build passed in 34s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Gallery return position and translator error presentation await manual device review.
+- APK SHA-256 `f9f0071b722cf79830f1eb8cc5426a263b2a0e833e62300df9efdcd4237ed849`; 16,477,605 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `2cc954db5a447ee15048d2da9c7bf855907f4b1458be49ddf4ffe782c0b421c1` references asset `9346d8897d8ce9975f5331fc441bd962933a6d895322f1a47506af452bf5b3cd`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.2. No website deployment.
+- Catalog epoch 1130 includes 1.14.2 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
