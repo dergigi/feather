@@ -133,7 +133,7 @@ internal fun PollContent(event: Event, state: FeedState, onReference: (NostrCont
             if (content.isNotBlank()) NoteSelection(event) { LinkText(content, style = MaterialTheme.typography.bodyLarge) }
         }
         quotes.forEach { reference ->
-            EmbeddedNote(reference, state.embedded[reference.id], state.profiles, "$mediaKey:${reference.id}", onReference)
+            EmbeddedNote(reference, state.embedded[reference.id], state.profiles, reference.id in state.unavailableEmbeds, "$mediaKey:${reference.id}", onReference)
         }
         if (attachments.isNotEmpty()) NoteMedia(event, attachments, mediaKey)
         if (poll == null) {
