@@ -225,7 +225,7 @@
     <string name="ui_issues_all">All</string>
     <string name="ui_issues_open">Open</string>
     <string name="ui_issues_closed">Closed</string>
-    <string name="ui_translate">Translate</string>
+    <string name="ui_translate">Translate offline</string>
     <string name="ui_show_original">Show original</string>
     <string name="ui_translate_shorter">Select a shorter passage to translate.</string>
     <string name="ui_translator_install">Install Offline Translator and download your languages to translate on this device.</string>

@@ -4,6 +4,12 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.14.5] - 2026-11-15
+
+### Changed
+- Prioritize Reply at the start of the text-selection menu while retaining standard Android actions.
+- Rename Feather's translation action to “Translate offline” in selection and note menus.
+
 ## [1.14.4] - 2026-11-15
 
 ### Changed

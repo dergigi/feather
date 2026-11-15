@@ -222,7 +222,7 @@
     <string name="ui_issues_all">すべて</string>
     <string name="ui_issues_open">未解決</string>
     <string name="ui_issues_closed">終了</string>
-    <string name="ui_translate">翻訳</string>
+    <string name="ui_translate">オフラインで翻訳</string>
     <string name="ui_show_original">原文を表示</string>
     <string name="ui_translate_shorter">翻訳する範囲を短くしてください。</string>
     <string name="ui_translator_install">Offline Translator をインストールして言語をダウンロードすると、この端末で翻訳できます。</string>

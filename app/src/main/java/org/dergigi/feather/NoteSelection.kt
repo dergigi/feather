@@ -1,11 +1,18 @@
 package org.dergigi.feather
 
 import androidx.compose.foundation.text.contextmenu.builder.item
+import androidx.compose.foundation.text.contextmenu.data.TextContextMenuData
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
+import androidx.compose.foundation.text.contextmenu.provider.LocalTextContextMenuDropdownProvider
+import androidx.compose.foundation.text.contextmenu.provider.LocalTextContextMenuToolbarProvider
+import androidx.compose.foundation.text.contextmenu.provider.TextContextMenuDataProvider
+import androidx.compose.foundation.text.contextmenu.provider.TextContextMenuProvider
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -14,6 +21,19 @@ import com.vitorpamplona.quartz.nip01Core.core.Event
 internal val LocalSelectionReply = staticCompositionLocalOf<(Event, String) -> Unit> { { _, _ -> } }
 private data object TranslateSelectionAction
 private data object ReplySelectionAction
+
+/** Keep the platform toolbar and callbacks, but give Reply its first available action slot. */
+private class ReplyFirstMenuProvider(private val delegate: TextContextMenuProvider) : TextContextMenuProvider {
+    override suspend fun showTextContextMenu(dataProvider: TextContextMenuDataProvider) {
+        delegate.showTextContextMenu(object : TextContextMenuDataProvider by dataProvider {
+            override fun data(): TextContextMenuData {
+                val data = dataProvider.data()
+                val reply = data.components.firstOrNull { it.key == ReplySelectionAction } ?: return data
+                return TextContextMenuData(listOf(reply) + data.components.filterNot { it.key == ReplySelectionAction })
+            }
+        })
+    }
+}
 
 /** Keep Android's selection actions, with reply and offline translation scoped to this event. */
 @Composable
@@ -27,6 +47,12 @@ internal fun NoteSelection(note: Event, content: @Composable () -> Unit) {
         val translateLabel = stringResource(R.string.ui_translate)
         val shorterTranslation = stringResource(R.string.ui_translate_shorter)
         val shorterQuote = stringResource(R.string.ui_shorter_quote)
+        val toolbar = LocalTextContextMenuToolbarProvider.current
+        val dropdown = LocalTextContextMenuDropdownProvider.current
+        val replyFirstToolbar = remember(toolbar) { toolbar?.let(::ReplyFirstMenuProvider) }
+        val replyFirstDropdown = remember(dropdown) { dropdown?.let(::ReplyFirstMenuProvider) }
+        CompositionLocalProvider(LocalTextContextMenuToolbarProvider provides replyFirstToolbar,
+            LocalTextContextMenuDropdownProvider provides replyFirstDropdown) {
         SelectionContainer(state = selection, modifier = Modifier.appendTextContextMenuComponents {
             if (selection.selectedTexts.any { it.text.isNotBlank() }) {
                 if (translations != null && translations.pending == null) item(TranslateSelectionAction, translateLabel, R.drawable.translate) {
@@ -57,5 +83,6 @@ internal fun NoteSelection(note: Event, content: @Composable () -> Unit) {
                 }
             }
         }, content = content)
+        }
     }
 }
