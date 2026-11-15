@@ -2273,3 +2273,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `92823498ad4c7faaa66b26274208d8b4d83c970a7a0b4fa190185afb444a3111`; 16,477,605 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
 - Zapstore release `f10a51bdd2b2bf9abcdb75e63d58c3f827aec4c4f1ec7d624a78f13db556ca45` references asset `6f1541fd3359d25fe1287033c90e506b79793b61332033f932ad3fed6d5ba392`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.3. No website deployment.
 - Catalog epoch 1180 includes 1.14.3 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## 2026-11-15 — 1.14.4 release
+
+- Source/tag `c4a61cf2a0444475d091a18d4ea784d926f5652d`; versionCode 253. Missing-Lightning-address notices show “Can't zap [name] (no Lightning address)”. A structured recipient field survives wallet wrappers and identifies the actual split recipient; amount, source note, step and technical details remain in the copied report. Payment journaling and retry behavior are unchanged.
+- Signed optimized build passed in 46s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Notice appearance awaits manual device review.
+- APK SHA-256 `0429551cefdfe66b1cf327607da37c72c293675dcce2b96eb520a0662c60e99d`; 16,478,149 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `03236dfa5cd566c47ae3823212d06ed304a933674c930ec49861fcf60e09e3b0` references asset `1ca9012e054300d56a46cc9fcffdbd0a01235fe6bf5de1fa2a0bd8e27d45f4d0`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.4. No website deployment.
+- Catalog epoch 1185 includes 1.14.4 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
