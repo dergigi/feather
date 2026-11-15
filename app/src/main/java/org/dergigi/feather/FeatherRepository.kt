@@ -649,6 +649,11 @@ class FeatherRepository(context: Context) {
         return (RelayDefaults.seeds.take(3) + own?.write.orEmpty().take(2) + own?.read.orEmpty().take(2))
             .mapNotNull(Protocol::relay).distinct().filter(::healthy)
     }
+    private var routingCacheLists: Map<String, Outbox.RelayList>? = null
+    private var routingCacheAuthors: List<String>? = null
+    private var routingCacheFallback: List<String>? = null
+    private var routingCacheUsableLists: Map<String, Outbox.RelayList> = emptyMap()
+    private var routingCachePopular: Set<String> = emptySet()
     private fun updateRoutingPool() {
         val own = relayLists[state.value.publicKey]
         val personal = (own?.read.orEmpty() + own?.write.orEmpty()).distinct().filter(::healthy).take(4)
@@ -673,8 +678,23 @@ class FeatherRepository(context: Context) {
             own?.read.orEmpty() + own?.write.orEmpty() +
             profileAuthors.take(12).flatMap { relayLists[it]?.write.orEmpty().take(1) }).distinct().filter(::healthy)
         val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + profileAuthors.take(64) + s.following + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
-        val usableLists = relayLists.mapValues { (_, list) -> Outbox.RelayList(list.read.filter(::healthy), list.write.filter(::healthy)) }
-        val popular = Outbox.readRoutes(authors, usableLists, s.relays).keys
+        // Navigation re-runs this several times per tap, on the main thread and from IO at once.
+        // readRoutes scans every candidate relay for every author; reuse the ranking while the
+        // inputs are unchanged instead of rescanning on each pass.
+        val usableLists: Map<String, Outbox.RelayList>
+        val popular: Set<String>
+        if (relayLists === routingCacheLists && authors == routingCacheAuthors && s.relays == routingCacheFallback) {
+            usableLists = routingCacheUsableLists
+            popular = routingCachePopular
+        } else {
+            usableLists = relayLists.mapValues { (_, list) -> Outbox.RelayList(list.read.filter(::healthy), list.write.filter(::healthy)) }
+            popular = Outbox.readRoutes(authors, usableLists, s.relays).keys
+            routingCacheLists = relayLists
+            routingCacheAuthors = authors.toList()
+            routingCacheFallback = s.relays.toList()
+            routingCacheUsableLists = usableLists
+            routingCachePopular = popular
+        }
         val next = (s.relays + RECIPE_RELAY + (priority + popular).mapNotNull(Protocol::relay).distinct().filter { it !in s.relays }.take(8)).toSet()
         if (next != routingPool) {
             routingPool = next

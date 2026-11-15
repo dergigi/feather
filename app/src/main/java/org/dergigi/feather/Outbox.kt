@@ -10,21 +10,25 @@ object Outbox {
         fun urls(marker: String) = event.tags.asSequence()
             .filter { it.size >= 2 && it[0] == "r" && (it.size == 2 || it[2] == marker) }
             .mapNotNull { Protocol.relay(it[1]) }.distinct().toList()
-        return RelayList(urls("read").take(4), urls("write"))
+        return RelayList(urls("read").take(4), urls("write").take(4))
     }
 
     fun readRoutes(authors: List<String>, lists: Map<String, RelayList>, fallback: List<String>, maxDiscovered: Int = 8, allowed: Set<String>? = null): Map<String, List<String>> {
         val keys = authors.distinct()
-        val candidates = keys.flatMap { lists[it]?.write.orEmpty() }.distinct().filter { it !in fallback && (allowed == null || it in allowed) }.toMutableSet()
+        val candidates = keys.flatMap { lists[it]?.write.orEmpty() }.distinct().filter { it !in fallback && (allowed == null || it in allowed) }.sorted().toMutableSet()
         val selected = fallback.toMutableSet()
         // Prefer relays covering the most authors; stable tie-breaking avoids connection churn.
         val coverage = keys.associateWith { key -> lists[key]?.write.orEmpty().count { it in selected } }.toMutableMap()
+        // Index each relay's authors once: scoring is a scan of the authors advertising that
+        // relay, not a rescan of every author for every candidate on every discovery round.
+        val relayKeys = HashMap<String, MutableList<String>>()
+        for (key in keys) for (relay in lists[key]?.write.orEmpty()) relayKeys.getOrPut(relay) { mutableListOf() }.add(key)
         repeat(maxDiscovered) {
-            val best = candidates.sorted().maxByOrNull { url -> keys.count { (coverage[it] ?: 0) < 2 && url in lists[it]?.write.orEmpty() } }
-            if (best != null && keys.any { (coverage[it] ?: 0) < 2 && best in lists[it]?.write.orEmpty() }) {
+            val best = candidates.maxByOrNull { url -> relayKeys[url].orEmpty().count { coverage.getOrDefault(it, 0) < 2 } }
+            if (best != null && relayKeys[best].orEmpty().any { coverage.getOrDefault(it, 0) < 2 }) {
                 selected += best
                 candidates -= best
-                keys.filter { best in lists[it]?.write.orEmpty() }.forEach { coverage[it] = (coverage[it] ?: 0) + 1 }
+                relayKeys[best].orEmpty().forEach { if (it in coverage) coverage[it] = coverage.getValue(it) + 1 }
             }
         }
         val result = linkedMapOf<String, MutableList<String>>()
