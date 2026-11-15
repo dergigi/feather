@@ -3055,5 +3055,9 @@ class FeatherRepository(context: Context) {
         historyJob?.start()
         return true
     }
-    companion object { fun shortKey(key: String): String = "${key.take(8)}…${key.takeLast(4)}" }
+    companion object {
+        fun shortKey(key: String): String = "${key.take(8)}…${key.takeLast(4)}"
+        /** Unresolved pubkeys render as a recognizable bech32 fragment instead of raw hex. */
+        fun shortNpub(key: String): String = runCatching { Protocol.npub(key).take(14) + "…" }.getOrDefault(shortKey(key))
+    }
 }

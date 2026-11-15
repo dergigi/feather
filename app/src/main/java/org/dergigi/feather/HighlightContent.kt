@@ -98,7 +98,7 @@ internal fun HighlightContent(event: Event, profiles: Map<String, Profile>, comp
                             val ref = token.reference
                             if (ref != null) {
                                 withLink(LinkAnnotation.Clickable(ref.copyableLink(token.text), TextLinkStyles(linkStyle)) { currentNavigate(ref) }) {
-                                    append(if (ref.hashtag != null) token.text else if (ref.profile) "@${profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id)}" else "↗ ${FeatherRepository.shortNpub(ref.id)}")
+                                    append(if (ref.hashtag != null) token.text else if (ref.profile) "@${profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id)}" else "↗ ${FeatherRepository.shortKey(ref.id)}")
                                 }
                             } else if (token.url != null) {
                                 withLink(LinkAnnotation.Url(token.url, TextLinkStyles(linkStyle))) { append(token.text) }

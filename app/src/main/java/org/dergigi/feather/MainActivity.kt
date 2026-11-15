@@ -1596,7 +1596,7 @@ private fun ReplyContext(note: Event, embedded: Map<String, Event>, profiles: Ma
     val filter = LocalContentFilter.current
     if (filter.hides(reference) || (parent != null && filter.hides(parent))) return
     val author = parent?.pubKey ?: reference.author
-    val name = profiles[author]?.name ?: author?.let(FeatherRepository::shortNpub) ?: FeatherRepository.shortKey(reference.id)
+    val name = profiles[author]?.name ?: author?.let(FeatherRepository::shortNpub) ?: FeatherRepository.shortNpub(reference.id)
     ReplyContextRow(parent, name, parent?.kind ?: reference.kind, loading) { onReference(reference) }
 }
 
