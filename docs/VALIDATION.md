@@ -2282,3 +2282,12 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `0429551cefdfe66b1cf327607da37c72c293675dcce2b96eb520a0662c60e99d`; 16,478,149 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
 - Zapstore release `03236dfa5cd566c47ae3823212d06ed304a933674c930ec49861fcf60e09e3b0` references asset `1ca9012e054300d56a46cc9fcffdbd0a01235fe6bf5de1fa2a0bd8e27d45f4d0`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.4. No website deployment.
 - Catalog epoch 1185 includes 1.14.4 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## 2026-11-15 — 1.14.5 release
+
+- Source/tag `3ee17780c14cbd558b298bc66a7296b6be0943f5`; versionCode 254. Reorder note text-selection menu data to put Reply first while delegating toolbar/dropdown rendering, geometry and callbacks to Compose's platform provider. Keep standard Android actions intact. Rename Feather's action to Translate offline in selection menus, note menus and translation controls, including Japanese localization.
+- Signed optimized build passed in 1m 21s. Package/version, expected signing certificate and APK-extracted launcher pixels verified; mapping archived locally. No tests or emulators run. Selection-menu placement awaits manual device review; Android still decides which actions fit on the visible row.
+- APK SHA-256 `798f18c3c09c3a605def36cbee8f91109facaa808e1fc4aa0fea2fe0297aa49e`; 16,478,173 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
+- Zapstore release `75fbd457fd7c21c111b4eb321d831a5a6ddf59382845014492fd2672c077b8a7` references asset `ed1cec5d9ead3e7163a64c62a64643cc55e49d1f1fde8d5a211681acff116e10`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.5. No website deployment.
+- Catalog epoch 1229 includes 1.14.5 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
