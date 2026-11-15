@@ -161,7 +161,7 @@ fun NoteMedia(note: Event, attachments: List<MediaContent.Attachment>, mediaKey:
                 if (!carousel) key(attachment.url) {
                     InlineImage(attachment) { onOpenImage(attachment) }
                 } else if (attachment == images.firstOrNull()) key("$mediaKey:images") {
-                    if (images.size > 1) InlineImageCarousel(images, onOpenImage)
+                    if (images.size > 1) InlineImageCarousel(note.id, images, onOpenImage)
                     else InlineImage(attachment) { onOpenImage(attachment) }
                 }
                 return@forEach
@@ -219,8 +219,16 @@ private val ImageCarouselScroll = object : NestedScrollConnection {
 }
 
 @Composable
-private fun InlineImageCarousel(images: List<MediaContent.Attachment>, onOpen: (MediaContent.Attachment) -> Unit) {
+private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attachment>, onOpen: (MediaContent.Attachment) -> Unit) {
     val pager = rememberPagerState(pageCount = { images.size })
+    val gallerySelection = LocalGallerySelection.current
+    val galleryPage = gallerySelection?.takeIf { it.noteId == noteId }
+        ?.let { selection -> images.indexOfFirst { it.url == selection.url } } ?: -1
+    SideEffect {
+        // Match by source and URL: profile galleries can contain photos from several notes.
+        // Apply during layout rather than launching a scroll that dismissal could cancel.
+        if (galleryPage >= 0 && pager.currentPage != galleryPage) pager.requestScrollToPage(galleryPage)
+    }
     val ratios = remember(images) {
         mutableStateMapOf(*images.map { it.url to (ImageRatios.get(it.url) ?: it.ratio) }.toTypedArray())
     }

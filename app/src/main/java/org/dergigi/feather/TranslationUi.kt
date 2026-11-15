@@ -22,7 +22,8 @@ import java.util.Locale
 
 internal val LocalTranslations = staticCompositionLocalOf<Translations?> { null }
 internal data class TranslatedNote(val language: String, val text: String, val showing: Boolean = true)
-internal data class TranslationSheet(val text: String? = null, val error: Boolean = false, val install: Boolean = false)
+internal data class TranslationSheet(val text: String? = null, val error: Boolean = false, val install: Boolean = false,
+    val unavailableLanguage: String? = null)
 
 /** Small session cache, shared across reader screens; translated text is never an Event. */
 internal class Translations(private val context: Context, private val scope: CoroutineScope) {
@@ -73,6 +74,8 @@ internal class Translations(private val context: Context, private val scope: Cor
                 }
             } catch (_: TranslatorUnavailable) {
                 if (generation == selectionGeneration) sheet = TranslationSheet(error = true, install = true)
+            } catch (failure: TranslatorFailure) {
+                if (generation == selectionGeneration) sheet = TranslationSheet(error = true, unavailableLanguage = failure.unavailableLanguage)
             } catch (_: TimeoutCancellationException) {
                 if (generation == selectionGeneration) sheet = TranslationSheet(error = true)
             } catch (cancelled: CancellationException) {
@@ -120,8 +123,16 @@ internal fun TranslationHost(content: @Composable () -> Unit) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)
                     .heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (sheet.error) {
-                        Text(stringResource(if (sheet.install) R.string.ui_translator_install else R.string.ui_translator_setup),
-                            style = MaterialTheme.typography.bodyMedium)
+                        val languageName = sheet.unavailableLanguage?.let { language ->
+                            Locale.forLanguageTag(language.replace('_', '-')).getDisplayName(Locale.getDefault())
+                                .takeIf { it.isNotBlank() } ?: language
+                        }
+                        val message = when {
+                            sheet.install -> stringResource(R.string.ui_translator_install)
+                            languageName != null -> stringResource(R.string.ui_translator_language_unavailable, languageName)
+                            else -> stringResource(R.string.ui_translator_setup)
+                        }
+                        Text(message, style = MaterialTheme.typography.bodyMedium)
                         TextButton(onClick = { translations.openTranslator(); translations.dismiss() }) {
                             Text(stringResource(if (sheet.install) R.string.ui_install_translator else R.string.ui_open_translator))
                         }

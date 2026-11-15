@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import dev.davidv.translator.ErrorType
 import dev.davidv.translator.ITranslationCallback
 import dev.davidv.translator.ITranslationService
 import dev.davidv.translator.TranslationError
@@ -16,7 +17,7 @@ import kotlinx.coroutines.withTimeout
 internal const val TRANSLATOR_PACKAGE = "dev.davidv.translator"
 internal const val TRANSLATOR_WEBSITE = "https://github.com/DavidVentura/offline-translator/releases/latest"
 internal class TranslatorUnavailable : Exception()
-internal class TranslatorFailure(message: String?) : Exception(message)
+internal class TranslatorFailure(message: String?, val unavailableLanguage: String? = null) : Exception(message)
 
 /** Public MIT-licensed AIDL interface; explicit local IPC only, no HTTP translation fallback. */
 internal suspend fun translateOffline(context: Context, text: String, language: String): String = withContext(Dispatchers.IO) {
@@ -51,7 +52,9 @@ internal suspend fun translateOffline(context: Context, text: String, language: 
                     else result.complete(translatedText)
                 }
                 override fun onTranslationError(error: TranslationError?) {
-                    result.completeExceptionally(TranslatorFailure(error?.message))
+                    val language = error?.takeIf { it.type == ErrorType.DETECTED_BUT_UNAVAILABLE }
+                        ?.language?.trim()?.take(80)?.takeIf { it.isNotEmpty() && it != "und" }
+                    result.completeExceptionally(TranslatorFailure(error?.message, language))
                 }
             })
             result.await()

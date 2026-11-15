@@ -226,6 +226,7 @@
     <string name="ui_translate_shorter">翻訳する範囲を短くしてください。</string>
     <string name="ui_translator_install">Offline Translator をインストールして言語をダウンロードすると、この端末で翻訳できます。</string>
     <string name="ui_translator_setup">翻訳できません。Offline Translator でダウンロード済みの言語を確認して、もう一度お試しください。</string>
+    <string name="ui_translator_language_unavailable">%1$sの翻訳を利用できません。Offline Translator でこの言語がダウンロードされているか確認して、もう一度お試しください。</string>
     <string name="ui_install_translator">Offline Translator をインストール</string>
     <string name="ui_open_translator">Offline Translator を開く</string>
     <string name="ui_create_picture_post">写真を投稿</string>

@@ -70,6 +70,8 @@ import kotlin.math.roundToInt
 import com.vitorpamplona.quartz.nip01Core.core.Event
 
 internal val LocalGalleryVisible = staticCompositionLocalOf { false }
+internal data class GallerySelection(val noteId: String?, val url: String)
+internal val LocalGallerySelection = compositionLocalOf<GallerySelection?> { null }
 internal class GalleryOpener(private val open: (List<String>, Int, Event?, Boolean) -> Unit) {
     operator fun invoke(images: List<String>, start: Int, note: Event? = null, expandAlbum: Boolean = true) = open(images, start, note, expandAlbum)
 }
@@ -87,7 +89,9 @@ internal fun GalleryHost(state: FeedState, walletConnected: Boolean, covered: Bo
         if (hiddenSource) { urls = arrayListOf(); noteIds = arrayListOf(); sourceNotes = emptyList() }
     }
     val currentAlbum by rememberUpdatedState(album)
-    CompositionLocalProvider(LocalGalleryVisible provides urls.isNotEmpty(), LocalOpenGallery provides GalleryOpener { images, start, note, expandAlbum ->
+    val selection = urls.getOrNull(index)?.let { GallerySelection(noteIds.getOrNull(index), it) }
+    CompositionLocalProvider(LocalGalleryVisible provides urls.isNotEmpty(), LocalGallerySelection provides selection,
+        LocalOpenGallery provides GalleryOpener { images, start, note, expandAlbum ->
         if (images.isNotEmpty() && (note == null || !filter.hides(note))) {
             val selected = start.coerceIn(images.indices)
             val photos = currentAlbum()

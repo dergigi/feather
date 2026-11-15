@@ -4,6 +4,12 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-11-15
+
+### Fixed
+- Keep the inline photo carousel on the last image viewed in the full-screen gallery when returning to the note.
+- Name the unavailable language reported by Offline Translator in the translation setup message, including selected-text translations.
+
 ## [1.14.1] - 2026-11-14
 
 ### Changed

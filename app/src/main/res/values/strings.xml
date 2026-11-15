@@ -229,6 +229,7 @@
     <string name="ui_translate_shorter">Select a shorter passage to translate.</string>
     <string name="ui_translator_install">Install Offline Translator and download your languages to translate on this device.</string>
     <string name="ui_translator_setup">Translation unavailable. Check your downloaded languages in Offline Translator, then try again.</string>
+    <string name="ui_translator_language_unavailable">Translation unavailable for %1$s. Check that this language is downloaded in Offline Translator, then try again.</string>
     <string name="ui_install_translator">Install Offline Translator</string>
     <string name="ui_open_translator">Open Offline Translator</string>
     <string name="ui_create_picture_post">Create photo post</string>
