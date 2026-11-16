@@ -2319,3 +2319,14 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Traced the existing automatic tab discovery, selected-feed author filters, profile-author filters, pagination, cached previews, and generic note-row rendering. Home uses the account plus followed authors when logged in; profiles show the issuer’s own events. Existing hashtag categories also inherit the new category only for explicitly tagged matching events.
 - Added attestations to addressable-version deduplication using kind + issuer + d, preserving the existing newest-time/lowest-ID tie break. No status filtering: revoked, invalid, verifying and unknown states remain visible. Missing d tags do not create a feed category.
 - Reviewed the diff and checked vector XML and whitespace. No build, tests, emulator or publication requested or performed.
+
+
+## 1.16.0 release — 2026-11-16
+
+- Release/tag source: `774c6ed4c1268a574fc9102ed41ab28a8fbd8e0a`; Android versionCode **256**. Adds the automatically discovered Attestations tab after Recipes in main and profile views, with an outlined shield and addressable-version deduplication.
+- `./gradlew assembleRelease` passed in **54s**, including release lint. Android build-tools 37.0.0 verified the APK signature and version. Launcher extraction check passed. Certificate SHA-256: `78fadad16ed2625151be59c4ad9b8ab24a96e9e4e454751f40623fa149c278cd`.
+- Signed APK: **16,482,905 bytes**, SHA-256 `fb1b34bb329faa91c86f3d8a8f6702e91f3cb9767321e60270e73f375cdf9891`. Archived APK, R8 mapping and SHA256SUMS. GitHub asset digest and the downloaded Zapstore CDN APK match.
+- GitHub release: https://github.com/dergigi/feather/releases/tag/v1.16.0 . Verified GitHub and both GRASP tags point to the release source; used the existing gh credential helper for the GitHub mirror fallback.
+- Zapstore release event: `16da2ba23ce7b9a0a6f70669d0cd15da158acc8b524a8de0a41d9bdaa5899182`; asset event: `ef0ab13252eeb9c04454a1587aa8f2659c015db941280cdd9315f1327c8bffef`. Confirmed version, code, size, hash and certificate on the catalog relay, and 1.16.0 on the public app page.
+- Catalog bundle **1414 → 1415** contains both release and asset events. Its processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+- No tests or emulators run; device validation remains for live testing through Zapstore. No website updates/deployments or public announcements.
