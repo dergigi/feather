@@ -461,3 +461,7 @@ Format reference: [Quartz’s kind-31871 attestation model](https://github.com/v
 ## Attestation feeds
 
 Add an icon-only Attestations tab with an outlined shield immediately after Recipes in the main feed and profile tab order. Discover its presence automatically from kind-31871 content through the existing bounded feed/profile discovery subscriptions. At home, use the connected account and followed authors, like other personal feeds; while logged out, use the existing public-feed behavior. Profiles show attestations issued by that profile, not attestations about it. Require a d tag, including the valid empty identifier; retain all declared statuses and unknown statuses. Reuse the native attestation cards, moderation, cached paging and refresh paths. Deduplicate by kind, author and d identifier, choosing the newest created_at and then the lowest event ID on ties, so retained versions do not duplicate updated/revoked cards. No extra subscription, setting, signing or trust inference.
+
+## Explicit feed refresh
+
+Pull-to-refresh closes and recreates only the selected home-feed subscription, even when its kind/author filters are unchanged. Keep automatic background subscription updates deduplicated. Retain cached content and the shared cache-first event-ID path. Capture the feed/account before waiting for repository readiness and discard the refresh if navigation or account changed. Restart the refresh timeout for the explicit request.

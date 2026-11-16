@@ -2330,3 +2330,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release event: `16da2ba23ce7b9a0a6f70669d0cd15da158acc8b524a8de0a41d9bdaa5899182`; asset event: `ef0ab13252eeb9c04454a1587aa8f2659c015db941280cdd9315f1327c8bffef`. Confirmed version, code, size, hash and certificate on the catalog relay, and 1.16.0 on the public app page.
 - Catalog bundle **1414 → 1415** contains both release and asset events. Its processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
 - No tests or emulators run; device validation remains for live testing through Zapstore. No website updates/deployments or public announcements.
+
+
+## Selected-feed refresh review — 2026-11-16 (unreleased)
+
+- Inspected Quartz 1.17.0 NostrClient bytecode from the locally cached AAR: subscribe calls PoolRequests.addOrUpdate and sendToRelayIfChanged; unsubscribe removes the old request and sends the resulting close. Existing profile and hashtag refresh paths already unsubscribe first.
+- Added an explicit-refresh flag to the synchronized feed subscription method. Only user-requested home-feed refresh closes/recreates the feed subscription; ordinary routing updates and background discovery retain their existing deduplication. The selected kind, author scope and result bounds are unchanged.
+- Reviewed feed/account/navigation guards after readiness and reset the explicit-refresh timeout. This fixes the missing fresh query on unchanged connected subscriptions; it does not establish why a particular relay returned only one attestation.
+- No build, tests, emulator or publication requested/performed.

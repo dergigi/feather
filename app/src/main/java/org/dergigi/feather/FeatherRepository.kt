@@ -573,10 +573,20 @@ class FeatherRepository(context: Context) {
             }
             return
         }
-        feedUntil = null; feedCeilings.remove(selectedFeed); feedDiscoveryAt = 0; profileUntil = null; hashtagUntil = null
+        val feed = selectedFeed
+        val account = state.value.publicKey
+        feedUntil = null; feedCeilings.remove(feed); feedDiscoveryAt = 0; profileUntil = null; hashtagUntil = null
         profileLimit = 100; hashtagLimit = 200
         _state.update { it.copy(loading = true, error = null) }
-        scope.launch { ready.await(); if (active) { changed.tryEmit(Unit); subscribeFeed(); client.connect() } }
+        scope.launch {
+            ready.await()
+            if (!active || selectedFeed != feed || state.value.publicKey != account ||
+                viewedProfile != null || viewedThread != null || viewedHashtag != null) return@launch
+            changed.tryEmit(Unit)
+            refreshTimeout?.cancel()
+            subscribeFeed(refreshSelectedFeed = true)
+            client.connect()
+        }
     }
 
     /** Keep a small live subscription; finite profile sweeps cover every advertised write relay. */
@@ -665,7 +675,7 @@ class FeatherRepository(context: Context) {
         }
     }
     @Synchronized
-    private fun subscribeFeed() {
+    private fun subscribeFeed(refreshSelectedFeed: Boolean = false) {
         if (!active) return
         updateRoutingPool()
         viewedHashtag?.let { client.subscribe("hashtag", hashtagFilters(it, author = viewedHashtagAuthor, tab = selectedHashtagTab), listener) }
@@ -703,6 +713,9 @@ class FeatherRepository(context: Context) {
             ProfileTab.POSTS -> homeFilters(authors, s.followedHashtags)
             else -> authorFilters(authors, selectedFeed.feedKinds(), 80)
         }
+        // Quartz suppresses identical filters. An explicit refresh must close the old
+        // feed request before subscribing again, without restarting background discovery.
+        if (refreshSelectedFeed) client.unsubscribe("feed")
         client.subscribe("feed", feedRoutes, listener)
         val discovery = authorFilters(authors, profileKinds, 8).mapValues { (_, filters) ->
             filters.flatMap { filter -> filter.kinds.orEmpty().map { kind ->

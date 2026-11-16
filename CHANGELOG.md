@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-11-16
+
+### Fixed
+- Make pull-to-refresh send a fresh selected-feed request even when its filters are unchanged, including the Attestations feed.
+
 ## [1.16.0] - 2026-11-16
 
 ### Added
