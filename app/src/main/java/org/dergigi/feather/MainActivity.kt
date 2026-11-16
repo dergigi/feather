@@ -1288,6 +1288,7 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
         return
     }
     val profile = state.profiles[note.pubKey]
+    if (profile == null) ResolveProfiles(listOf(note.pubKey))
     if (note.kind == 30023 && compact) {
         ArticleListRow(note, profile?.name ?: FeatherRepository.shortKey(note.pubKey), profile?.picture, onProfile, onOpen)
         return
@@ -1609,12 +1610,24 @@ internal fun richNoteText(body: String, note: Event, profiles: Map<String, Profi
     return richText(body, tokens, profiles, onReference, embeddedIds)
 }
 
+/** Cached names must resolve at render time: a note can be on screen before the next
+    snapshot pass merges its referenced profiles into state. */
+@Composable
+internal fun ResolveProfiles(missing: Collection<String>) {
+    if (missing.isEmpty()) return
+    val repo = (LocalContext.current.applicationContext as FeatherApplication).repository
+    LaunchedEffect(missing) { repo.requestProfiles(missing) }
+}
+
 @Composable
 private fun richText(body: String, tokens: List<NostrContent.Token>, profiles: Map<String, Profile>,
     onReference: (NostrContent.Reference) -> Unit, embeddedIds: Set<String> = emptySet()): androidx.compose.ui.text.AnnotatedString {
     val open by rememberUpdatedState(onReference)
     val context = LocalContext.current
     val linkColor = MaterialTheme.colorScheme.primary
+    ResolveProfiles(tokens.mapNotNull { token ->
+        token.reference?.takeIf { it.profile && it.id !in profiles }?.id
+    })
     return remember(body, tokens, profiles, embeddedIds, linkColor, context) {
         buildAnnotatedString {
             var offset = 0
@@ -1641,6 +1654,7 @@ private fun richText(body: String, tokens: List<NostrContent.Token>, profiles: M
 internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profiles: Map<String, Profile>, mediaKey: String, onReference: (NostrContent.Reference) -> Unit, compact: Boolean = true, actions: (@Composable () -> Unit)? = null) {
     val filter = LocalContentFilter.current
     if (filter.hides(reference) || (note != null && filter.hides(note))) return
+    ResolveProfiles(listOfNotNull(note?.pubKey, reference.author).filter { it !in profiles })
     if (note?.kind == 32267) {
         Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
             Column {
