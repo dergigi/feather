@@ -1306,6 +1306,50 @@ class FeatherRepository(context: Context) {
         }
     }
 
+    private data class ReadingEmbeds(
+        val references: List<NostrContent.Reference>,
+        val ids: List<String>,
+        val addresses: List<NostrContent.Reference>,
+        val events: Map<String, Event>,
+    )
+
+    private suspend fun resolveReadingEmbeds(
+        initialRefs: List<NostrContent.Reference>, initialIds: List<String>,
+        initialAddresses: List<NostrContent.Reference>, contentFilter: ContentFilter,
+    ): ReadingEmbeds {
+        var refs = initialRefs
+        var quoteIds = initialIds
+        var addressRefs = initialAddresses
+        var embedded = mutex.withLock {
+            val byId = cachedEventsLocked(quoteIds).filterValues { it.kind in readableKinds }
+            val byAddress = addressRefs.mapNotNull { ref ->
+                db.query<Event>(ref.addressFilter()!!).sortedWith(compareByDescending<Event> { it.createdAt }.thenBy { it.id })
+                    .firstOrNull()?.let { ref.id to it }
+            }.toMap()
+            byId + byAddress
+        }
+        // One extra level for an attestation's assertion, inside the existing 24-embed
+        // budget. Do not walk arbitrary quote chains or refetch complete verified IDs.
+        val assertionRefs = embedded.values.asSequence().filterNot(contentFilter::hides)
+            .mapNotNull(::attestationTarget).filter { it.external == null && !contentFilter.hides(it) }
+            .distinctBy { it.id }.filter { it.id !in quoteIds && addressRefs.none { address -> address.id == it.id } }
+            .take(minOf(8, (24 - quoteIds.size - addressRefs.size).coerceAtLeast(0))).toList()
+        if (assertionRefs.isNotEmpty()) {
+            val ids = assertionRefs.filter { ':' !in it.id }.map { it.id }
+            val addresses = assertionRefs.filter { it.addressFilter() != null }
+            embedded = embedded + mutex.withLock {
+                cachedEventsLocked(ids).filterValues { it.kind in readableKinds } + addresses.mapNotNull { ref ->
+                    db.query<Event>(ref.addressFilter()!!).sortedWith(compareByDescending<Event> { it.createdAt }.thenBy { it.id })
+                        .firstOrNull()?.let { ref.id to it }
+                }.toMap()
+            }
+            quoteIds = quoteIds + ids
+            addressRefs = addressRefs + addresses
+            refs = (assertionRefs + refs).distinctBy { it.id }.take(64)
+        }
+        return ReadingEmbeds(refs, quoteIds, addressRefs, embedded)
+    }
+
     private suspend fun snapshotContents(initialFeedOnly: Boolean = false) {
         refreshDeletedReactions()
         rememberDeleted(cachedViewEvents())
@@ -1462,33 +1506,11 @@ class FeatherRepository(context: Context) {
         val notificationRefs = if (viewingNotifications) visible.mapNotNull(::notificationTarget) else emptyList()
         var quoteIds = (notificationRefs.filter { !it.profile } + bookmarkRefs.filter { it.external == null } + bioQuotes + readingContent.flatMap { listOfNotNull(NostrContent.replyReference(it)) + NostrContent.quotes(it) }).map { it.id }.filter { ':' !in it }.distinct().take(24)
         var addressRefs = (bookmarkRefs + refs).distinctBy { it.id }.filter { it.addressFilter() != null }.take((24 - quoteIds.size).coerceAtLeast(0))
-        var embedded = mutex.withLock {
-            val byId = cachedEventsLocked(quoteIds).filterValues { it.kind in readableKinds }
-            val byAddress = addressRefs.mapNotNull { ref ->
-                db.query<Event>(ref.addressFilter()!!).sortedWith(compareByDescending<Event> { it.createdAt }.thenBy { it.id })
-                    .firstOrNull()?.let { ref.id to it }
-            }.toMap()
-            byId + byAddress
-        }
-        // One extra level for an attestation's assertion, inside the existing 24-embed
-        // budget. Do not walk arbitrary quote chains or refetch complete verified IDs.
-        val assertionRefs = embedded.values.asSequence().filterNot(contentFilter::hides)
-            .mapNotNull(::attestationTarget).filter { it.external == null && !contentFilter.hides(it) }
-            .distinctBy { it.id }.filter { it.id !in quoteIds && addressRefs.none { address -> address.id == it.id } }
-            .take(minOf(8, (24 - quoteIds.size - addressRefs.size).coerceAtLeast(0))).toList()
-        if (assertionRefs.isNotEmpty()) {
-            val ids = assertionRefs.filter { ':' !in it.id }.map { it.id }
-            val addresses = assertionRefs.filter { it.addressFilter() != null }
-            embedded = embedded + mutex.withLock {
-                cachedEventsLocked(ids).filterValues { it.kind in readableKinds } + addresses.mapNotNull { ref ->
-                    db.query<Event>(ref.addressFilter()!!).sortedWith(compareByDescending<Event> { it.createdAt }.thenBy { it.id })
-                        .firstOrNull()?.let { ref.id to it }
-                }.toMap()
-            }
-            quoteIds = quoteIds + ids
-            addressRefs = addressRefs + addresses
-            refs = (assertionRefs + refs).distinctBy { it.id }.take(64)
-        }
+        val readingEmbeds = resolveReadingEmbeds(refs, quoteIds, addressRefs, contentFilter)
+        refs = readingEmbeds.references
+        quoteIds = readingEmbeds.ids
+        addressRefs = readingEmbeds.addresses
+        val embedded = readingEmbeds.events
         val countTargets = (visible.filter { it.kind in readableKinds } + embedded.values.filterNot(contentFilter::hides)).distinctBy { it.id }.take(24)
         refreshIssueStatuses(countTargets)
         visiblePolls = countTargets.filter { it.kind == 1068 }.take(8)
