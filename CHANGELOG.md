@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-16
+
+### Added
+- Render kind-31871 attestations with the author's stated status, validity dates, referenced note and explanation. Open attestr.xyz attestation links natively.
+
 ## [1.14.5] - 2026-11-15
 
 ### Changed

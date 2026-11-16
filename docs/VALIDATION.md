@@ -2291,3 +2291,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - APK SHA-256 `798f18c3c09c3a605def36cbee8f91109facaa808e1fc4aa0fea2fe0297aa49e`; 16,478,173 bytes. GitHub asset digest and complete Zapstore CDN download match. GitHub and both GRASP release tags verified.
 - Zapstore release `75fbd457fd7c21c111b4eb321d831a5a6ddf59382845014492fd2672c077b8a7` references asset `ed1cec5d9ead3e7163a64c62a64643cc55e49d1f1fde8d5a211681acff116e10`. Relay read-back verifies version, size, checksum and signing certificate. Public app page shows 1.14.5. No website deployment.
 - Catalog epoch 1229 includes 1.14.5 and retains the corrected feather icon, SHA-256 `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+
+
+## Attestation rendering review — 2026-11-16 (unreleased)
+
+- Followed the supplied kind-1 example `afbc764bad73353960aee6777676cb5c9074c6c58b89fb298f5208d7afc0d2d2` and its parent through relay.snort.social / relay.day.ag. Inspected the attached Amethyst screenshot and retrieved Nathan Day’s kind-31871 example `7efc09247c37beaccfa899b8757d56a89cbbc84d5689f8913eeef1bb3b3f2256`: s=valid, e=`04890c496d1751e554a814ffd4567923ea7fd690b31f93721be2256ea800611e`, and “Confirmed out-of-band that this is the new Derek.”
+- Compared the public format with Quartz commit `04f8c5be56e43ea61de02ba56452579235f4f535` (AttestationEvent, StatusTag, ValidFromTag, ValidToTag) and Amethyst’s rendering at `1badcc5b7e4803286c601b003c35f03173cb6bf8`. Implemented Feather’s own theme-following card without dependency changes.
+- Source review covers native pointer routing, attestr.xyz URL recognition, e/a targets, unsupported target fallback, self-reference rejection, bounded nested rendering, shared cache-first ID requests, live address discovery, unknown statuses, date bounds, and existing moderation. The issuer’s status is displayed as a claim, not independently verified.
+- No build, tests, emulator, release, website change or public post: build/device validation remains pending the release request.

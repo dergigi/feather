@@ -424,8 +424,9 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
         if (contentFilter.hides(ref)) return
         val resolved = s.embedded[ref.id]
         if (resolved != null && resolved.kind in readableKinds) {
-            val destination = ReaderEntry("thread", resolved.id)
-            destination.reference = NostrContent.Reference(resolved.id, author = resolved.pubKey, kind = resolved.kind, relays = ref.relays)
+            val target = if (resolved.kind == ATTESTATION_KIND && ref.addressFilter() != null) ref.id else resolved.id
+            val destination = ReaderEntry("thread", target)
+            destination.reference = NostrContent.Reference(target, author = resolved.pubKey, kind = resolved.kind, relays = ref.relays)
             destination.notes[ProfileTab.POSTS] = listOf(resolved)
             navigation.push(destination); activate(navigation.current, resolved)
             return
@@ -504,7 +505,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
         if (s.publicKey == null) showAccount = true else vm.openReply(note, selectedText = text)
     }, LocalRepostActions provides RepostActions(reposting,
         repost = { note -> if (s.publicKey == null) showAccount = true else vm.repost(note) },
-        quote = { note -> if (s.publicKey == null) showAccount = true else vm.openReply(quote = note) }), LocalContentFilter provides contentFilter, LocalZapSplitProfile provides ::openProfile, LocalZapActions provides ZapActions(zapping, confirmedZaps, recentZapAmounts[s.publicKey].orEmpty().ifEmpty { defaultZapAmounts }, zapCelebrations) { note, amount, message ->
+        quote = { note -> if (s.publicKey == null) showAccount = true else vm.openReply(quote = note) }), LocalContentFilter provides contentFilter, LocalAttestationNotes provides s.embedded, LocalZapSplitProfile provides ::openProfile, LocalZapActions provides ZapActions(zapping, confirmedZaps, recentZapAmounts[s.publicKey].orEmpty().ifEmpty { defaultZapAmounts }, zapCelebrations) { note, amount, message ->
         if (s.publicKey == null) showAccount = true
         else if (!walletConnected) showWallet = true
         else vm.zap(note, amount, message)
@@ -1338,6 +1339,7 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
         }
         Spacer(Modifier.height(12.dp))
         when {
+            note.kind == ATTESTATION_KIND -> AttestationContent(note, state.profiles, compact, onReference)
             note.kind == 1068 -> PollContent(note, state, onReference, repost?.id ?: note.id)
             note.kind == 32267 -> SoftwareAppContent(note, onReference)
             note.kind == 1621 -> IssueContent(note, compact, onReference, state.issueStatuses[note.id], state)
@@ -1691,6 +1693,7 @@ internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profi
                     NoteTimestamp(note)
                 }
                 if (note.kind in voiceKinds) AudioContent(note, compact, name)
+                else if (note.kind == ATTESTATION_KIND) AttestationContent(note, profiles, compact, onReference)
                 else if (note.kind == 30030) EmojiPackContent(note)
                 else if (note.kind == 30023) ArticleContent(note, compact, onReference)
                 else if (note.kind == 9802) HighlightContent(note, profiles, compact, onReference)

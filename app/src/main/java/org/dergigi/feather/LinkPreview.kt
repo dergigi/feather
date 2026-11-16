@@ -46,6 +46,7 @@ private data class PreviewLayout(val parts: List<PreviewPart>, val podcasts: Lis
 private val paragraphBreak = Regex("\\r?\\n[ \\t\\r]*\\n")
 
 private fun previewLink(raw: String, podcasts: List<PodcastReference>): PreviewLink? {
+    if (attestationWebReference(raw.trimEnd('.', ',', ')', ']', '!', '?')) != null) return null
     val url = (FountainLinks.canonical(raw) ?: raw).trimEnd('.', ',', ')', ']', '!', '?').toHttpUrlOrNull() ?: return null
     if (url.username.isNotEmpty() || url.password.isNotEmpty() || url.port !in setOf(80, 443)) return null
     if (podcasts.none { it.url == url.toString() } && url.pathSegments.lastOrNull()?.substringAfterLast('.')?.lowercase() in nonPages) return null

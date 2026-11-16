@@ -240,4 +240,13 @@
     <string name="ui_notice_countdown_running">自動消去までカウントダウン中です。テキストをタップすると一時停止します</string>
     <string name="ui_pause_notice_countdown">自動消去のカウントダウンを一時停止</string>
     <string name="ui_resume_notice_countdown">自動消去のカウントダウンを再開</string>
+    <string name="ui_attestation_status">証言 · %1$s</string>
+    <string name="ui_attestation_valid">有効</string>
+    <string name="ui_attestation_invalid">無効</string>
+    <string name="ui_attestation_revoked">撤回済み</string>
+    <string name="ui_attestation_verifying">確認中</string>
+    <string name="ui_attestation_unknown">状態不明</string>
+    <string name="ui_attestation_from">有効期間の開始：%1$s</string>
+    <string name="ui_attestation_until">有効期間の終了：%1$s</string>
+    <string name="ui_attestation_subject">証言の対象の投稿を表示</string>
 </resources>

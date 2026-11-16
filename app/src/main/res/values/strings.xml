@@ -247,4 +247,13 @@
     <string name="ui_notice_countdown_running">Dismissal countdown running; tap the text to pause</string>
     <string name="ui_pause_notice_countdown">Pause dismissal countdown</string>
     <string name="ui_resume_notice_countdown">Resume dismissal countdown</string>
+    <string name="ui_attestation_status">Attestation · %1$s</string>
+    <string name="ui_attestation_valid">Valid</string>
+    <string name="ui_attestation_invalid">Invalid</string>
+    <string name="ui_attestation_revoked">Revoked</string>
+    <string name="ui_attestation_verifying">Verifying</string>
+    <string name="ui_attestation_unknown">Unknown status</string>
+    <string name="ui_attestation_from">Valid from %1$s</string>
+    <string name="ui_attestation_until">Valid until %1$s</string>
+    <string name="ui_attestation_subject">View attested note</string>
 </resources>

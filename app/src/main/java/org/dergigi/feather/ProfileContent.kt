@@ -6,7 +6,7 @@ import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrl
 
 // Tabs describe existing public activity, never actions that publish events.
 internal val videoKinds = listOf(21, 22, 34235, 34236)
-internal val readableKinds = listOf(1, 1111, 17, 1068, 1621, 32267, 20, 9802, 30023, 30030) + videoKinds + voiceKinds
+internal val readableKinds = listOf(1, 1111, 17, 1068, 1621, 32267, 20, 9802, 30023, 30030, ATTESTATION_KIND) + videoKinds + voiceKinds
 internal val profileKinds = listOf(1, 1111, 17, 1068, 1621, 6, 16, 7, 9802, 20, 10003, 30003, 32267, 30023, 3, 30000, 30617, 30030, 9735, 9321) + videoKinds + voiceKinds
 
 enum class ProfileTab(val kinds: List<Int>, val label: String) {
@@ -141,6 +141,7 @@ internal fun highlightSource(event: Event): HighlightSource? {
 }
 
 internal fun activityReferences(event: Event): List<NostrContent.Reference> = when (event.kind) {
+    ATTESTATION_KIND -> listOfNotNull(attestationTarget(event))
     3, 30000 -> peopleReferences(event)
     10003, 30003 -> bookmarkReferences(event)
     6, 16 -> listOfNotNull(repostTarget(event))

@@ -23,7 +23,7 @@ object NostrContent {
     /** Direct search inputs are submitted explicitly, never sent to profile search providers. */
     internal fun isSearchReference(raw: String): Boolean {
         val value = raw.trim()
-        return value.startsWith("nostr:", ignoreCase = true) ||
+        return attestationWebReference(value) != null || value.startsWith("nostr:", ignoreCase = true) ||
             (value.startsWith("#") && value.none(Char::isWhitespace)) ||
             Regex("^(npub|nprofile|note|nevent|naddr|nrelay|nsec)1", RegexOption.IGNORE_CASE).containsMatchIn(value)
     }
@@ -41,6 +41,7 @@ object NostrContent {
     }
 
     fun decode(raw: String): Reference? = runCatching {
+        if (raw.startsWith("https://", ignoreCase = true)) return attestationWebReference(raw)
         val value = raw.lowercase().removePrefix("nostr:")
         val parsed = Nip19Parser.uriToRoute(value)?.takeIf { it.nip19raw == value && it.additionalChars.isNullOrEmpty() } ?: return null
         val result = when (val entity = parsed.entity) {
@@ -60,7 +61,8 @@ object NostrContent {
         val raw = match.value
         if (raw.startsWith("http", true) || raw.startsWith("blossom:")) {
             val url = raw.trimEnd('.', ',', ')', ']', '!', '?')
-            Token(match.range.first, match.range.first + url.length, url, url = url)
+            val attestation = attestationWebReference(url)
+            Token(match.range.first, match.range.first + url.length, url, reference = attestation, url = url.takeIf { attestation == null })
         } else {
             val reference = if (raw.startsWith("#[")) {
                 val tag = event.tags.getOrNull(raw.drop(2).dropLast(1).toIntOrNull() ?: -1)
