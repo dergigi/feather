@@ -2338,3 +2338,14 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Added an explicit-refresh flag to the synchronized feed subscription method. Only user-requested home-feed refresh closes/recreates the feed subscription; ordinary routing updates and background discovery retain their existing deduplication. The selected kind, author scope and result bounds are unchanged.
 - Reviewed feed/account/navigation guards after readiness and reset the explicit-refresh timeout. This fixes the missing fresh query on unchanged connected subscriptions; it does not establish why a particular relay returned only one attestation.
 - No build, tests, emulator or publication requested/performed.
+
+
+## 1.16.1 release — 2026-11-16
+
+- Release/tag source: `15d3ec422f2e4d8571b3144495574c052f1187ea`; Android versionCode **257**. Includes only the selected-feed pull-to-refresh fix; external PRs remain unmerged.
+- `./gradlew assembleRelease` passed in **1m 37s**, including release lint. Android build-tools 37.0.0 verified the signature and version. Launcher extraction check passed; generated BuildConfig contains the release source commit. Certificate SHA-256: `78fadad16ed2625151be59c4ad9b8ab24a96e9e4e454751f40623fa149c278cd`.
+- Signed APK: **16,482,905 bytes**, SHA-256 `4c62a590cf5ac5c721412fa678f2f4e61454dc2ef3028ab1e497e059ac881c86`. Archived APK, R8 mapping and SHA256SUMS. GitHub asset digest and downloaded Zapstore CDN APK match.
+- GitHub release: https://github.com/dergigi/feather/releases/tag/v1.16.1 . GitHub and both GRASP release tags point to the source commit; the GitHub mirror needed a direct push using the existing gh credential helper.
+- Zapstore release event: `c9b5e6b2980df62058103f3f914ca8d633476d54d59ffa11d4ac514c8cbd2162`; asset event: `a99346e4a8a7ecf4a9921055ed6d650f441a13360323bea23b375ec1d1de7abc`. Verified version, code, size, hash and certificate on the catalog relay, and 1.16.1 on the public app page.
+- Catalog bundle **1420 → 1422** contains both release and asset events. Its processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+- No tests or emulators run; device validation remains for live testing through Zapstore. No website changes, deployments or public announcements.
