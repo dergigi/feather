@@ -55,7 +55,7 @@ internal fun IssueComposer(vm: FeatherViewModel) {
                     Spacer(Modifier.weight(1f))
                     signer?.pubKey?.let { owner ->
                         val profile = state.profiles[owner]
-                        AccountAvatar(profile?.name ?: FeatherRepository.shortKey(owner), 36, profile?.picture)
+                        AccountAvatar(profile?.name ?: FeatherRepository.shortNpub(owner), 36, profile?.picture)
                     }
                 }
                 val current = draft
@@ -89,7 +89,7 @@ internal fun IssueComposer(vm: FeatherViewModel) {
                             shape = RoundedCornerShape(20.dp), minLines = 8, modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                                 unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent))
-                        val name = signer?.pubKey?.let { state.profiles[it]?.name ?: FeatherRepository.shortKey(it) }
+                        val name = signer?.pubKey?.let { state.profiles[it]?.name ?: FeatherRepository.shortNpub(it) }
                         Text(if (name != null) stringResource(R.string.ui_public_issue_author, name) else stringResource(R.string.ui_public_issue_sign_in),
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         error?.let { text -> TextButton(onClick = { AppMessages.show(text) }) {

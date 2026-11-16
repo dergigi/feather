@@ -12,7 +12,7 @@ internal fun noticePreview(text: String): String {
 
 internal fun noticeProfileName(pubkey: String, profiles: Map<String, Profile>): String =
     profiles[pubkey]?.name?.let(::noticePreview)?.takeIf(String::isNotBlank)
-        ?: FeatherRepository.shortKey(pubkey)
+        ?: FeatherRepository.shortNpub(pubkey)
 
 internal fun noticeEventContext(note: Event, profiles: Map<String, Profile>, type: String = "note"): String {
     val author = noticeProfileName(note.pubKey, profiles)

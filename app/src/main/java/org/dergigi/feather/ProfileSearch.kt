@@ -80,7 +80,7 @@ internal object VertexProfileSearch {
                     event.createdAt > System.currentTimeMillis() / 1000 + 600 || !event.verify()) return@runCatching null
                 val data = JSONObject(event.content)
                 SearchProfile(event, (data.optString("display_name").takeIf(String::isNotBlank)
-                    ?: data.optString("name").takeIf(String::isNotBlank) ?: FeatherRepository.shortKey(event.pubKey)).take(200),
+                    ?: data.optString("name").takeIf(String::isNotBlank) ?: FeatherRepository.shortNpub(event.pubKey)).take(200),
                     MediaContent.secureUrl(data.optString("picture").trim()),
                     data.optString("nip05").takeIf(String::isNotBlank)?.take(320), event.isSensitive())
             }.getOrNull()

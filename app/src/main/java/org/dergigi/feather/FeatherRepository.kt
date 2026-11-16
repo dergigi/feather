@@ -65,6 +65,7 @@ data class FeedState(
     val hashtagCategories: List<ProfileTab> = emptyList(),
     val profiles: Map<String, Profile> = emptyMap(),
     val embedded: Map<String, Event> = emptyMap(),
+    val unavailableEmbeds: Set<String> = emptySet(),
     val pendingVotes: Set<String> = emptySet(),
     val issueStatuses: Map<String, Int> = emptyMap(),
     val pollResults: Map<String, PollResults> = emptyMap(),
@@ -231,6 +232,10 @@ class FeatherRepository(context: Context) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Event>?) = size > 128
     }
     private val eventLookupChanges = Channel<Unit>(Channel.CONFLATED)
+    // Profile merges are coalesced: per-event state emissions during a scroll burst would
+    // recompose every rendered note for each name instead of once per batch.
+    private val profileMergeWake = Channel<Unit>(Channel.CONFLATED)
+    private val pendingProfileMerges = java.util.concurrent.ConcurrentHashMap<String, Profile>()
     // Repository monitor owns network state; all readers share this one subscription.
     private var pendingEventLookups: Map<String, Set<String>> = emptyMap()
     private val eventIdPattern = Regex("[0-9a-f]{64}")
@@ -318,6 +323,12 @@ class FeatherRepository(context: Context) {
         }
         override fun onEose(relay: NormalizedRelayUrl, forFilters: List<Filter>?) {
             threadProgress.completed(relay.url, forFilters)
+            val lookupIds = forFilters?.flatMap { filter -> filter.ids.orEmpty() }.orEmpty()
+            if (lookupIds.isNotEmpty()) synchronized(eosedLookupRoutes) {
+                lookupIds.forEach { id -> eosedLookupRoutes.getOrPut(id) { mutableSetOf() }.add(relay.url) }
+                // The final EOSE may confirm absence: re-evaluate, or the pill stays "looking".
+                eventLookupChanges.trySend(Unit)
+            }
             unavailableUntil.remove(Protocol.relay(relay.url) ?: relay.url)
             if (viewingNotifications && forFilters?.any { it.authors == null && it.tags?.get("p") == listOf(state.value.publicKey) && it.kinds?.any { kind -> kind in notificationKinds } == true } == true)
                 _state.update { it.copy(notificationsLoading = false) }
@@ -403,6 +414,13 @@ class FeatherRepository(context: Context) {
             }
         }
         scope.launch { ready.await(); threadChanges.sample(150).collect { refreshConversation() } }
+        scope.launch {
+            ready.await()
+            for (ignored in profileMergeWake) {
+                delay(200)
+                flushPendingProfiles()
+            }
+        }
         scope.launch {
             ready.await()
             for (ignored in eventLookupChanges) {
@@ -510,7 +528,7 @@ class FeatherRepository(context: Context) {
         }
     }
     @Synchronized
-    fun background() { active = false; stopProfileSweep(); foregroundActive.value = false; blocktime.stop(); zapVerification.stop(); discoveryJob?.cancel(); historyJob?.cancel(); threadParentJob?.cancel(); refreshTimeout?.cancel(); pendingEventLookups = emptyMap(); client.unsubscribe("event-ids"); client.disconnect(); _state.update { it.copy(connected = emptySet(), loading = false) } }
+    fun background() { active = false; stopProfileSweep(); foregroundActive.value = false; blocktime.stop(); zapVerification.stop(); discoveryJob?.cancel(); historyJob?.cancel(); threadParentJob?.cancel(); refreshTimeout?.cancel(); pendingEventLookups = emptyMap(); synchronized(eosedLookupRoutes) { eosedLookupRoutes.clear() }; confirmedMissingEvents = emptySet(); client.unsubscribe("event-ids"); client.disconnect(); _state.update { it.copy(connected = emptySet(), loading = false, unavailableEmbeds = emptySet()) } }
     fun refresh() {
         historyJob?.cancel()
         if (viewedThread != null) {
@@ -631,6 +649,11 @@ class FeatherRepository(context: Context) {
         return (RelayDefaults.seeds.take(3) + own?.write.orEmpty().take(2) + own?.read.orEmpty().take(2))
             .mapNotNull(Protocol::relay).distinct().filter(::healthy)
     }
+    private var routingCacheLists: Map<String, Outbox.RelayList>? = null
+    private var routingCacheAuthors: List<String>? = null
+    private var routingCacheFallback: List<String>? = null
+    private var routingCacheUsableLists: Map<String, Outbox.RelayList> = emptyMap()
+    private var routingCachePopular: Set<String> = emptySet()
     private fun updateRoutingPool() {
         val own = relayLists[state.value.publicKey]
         val personal = (own?.read.orEmpty() + own?.write.orEmpty()).distinct().filter(::healthy).take(4)
@@ -655,13 +678,29 @@ class FeatherRepository(context: Context) {
             own?.read.orEmpty() + own?.write.orEmpty() +
             profileAuthors.take(12).flatMap { relayLists[it]?.write.orEmpty().take(1) }).distinct().filter(::healthy)
         val authors = (listOfNotNull(s.publicKey, viewedProfile, threadAuthor) + profileAuthors.take(64) + s.following + s.notes.take(40).map { it.pubKey }.takeIf { s.publicKey == null }.orEmpty()).distinct()
-        val usableLists = relayLists.mapValues { (_, list) -> Outbox.RelayList(list.read.filter(::healthy), list.write.filter(::healthy)) }
-        val popular = Outbox.readRoutes(authors, usableLists, s.relays).keys
+        // Navigation re-runs this several times per tap, on the main thread and from IO at once.
+        // readRoutes scans every candidate relay for every author; reuse the ranking while the
+        // inputs are unchanged instead of rescanning on each pass.
+        val usableLists: Map<String, Outbox.RelayList>
+        val popular: Set<String>
+        if (relayLists === routingCacheLists && authors == routingCacheAuthors && s.relays == routingCacheFallback) {
+            usableLists = routingCacheUsableLists
+            popular = routingCachePopular
+        } else {
+            usableLists = relayLists.mapValues { (_, list) -> Outbox.RelayList(list.read.filter(::healthy), list.write.filter(::healthy)) }
+            popular = Outbox.readRoutes(authors, usableLists, s.relays).keys
+            routingCacheLists = relayLists
+            routingCacheAuthors = authors.toList()
+            routingCacheFallback = s.relays.toList()
+            routingCacheUsableLists = usableLists
+            routingCachePopular = popular
+        }
         val next = (s.relays + RECIPE_RELAY + (priority + popular).mapNotNull(Protocol::relay).distinct().filter { it !in s.relays }.take(8)).toSet()
         if (next != routingPool) {
             routingPool = next
             historyJob?.cancel()
-            client.unsubscribe("profiles")
+            // "profiles" is intentionally left alone here: it targets its own stable relay set,
+            // and NostrClient re-sends only the per-relay filters that actually changed.
         }
     }
     @Synchronized
@@ -829,6 +868,27 @@ class FeatherRepository(context: Context) {
             notificationKinds.map { kind -> Filter(kinds = listOf(kind), tags = mapOf("p" to listOf(owner)), limit = 100) }
         }, listener)
     }
+    /** Account metadata is the only reading-data subscription that resolves content names. */
+    private fun subscribeProfiles() {
+        if (!active) return
+        val targets = (listOfNotNull(state.value.publicKey, viewedProfile) + profileAuthors + detailAuthors.values.flatten().distinct().take(64)).distinct().take(160)
+        // A stable relay set: riding the rotating routing pool would restart this request before
+        // it finishes streaming every referenced author's latest kind-0, so names resolve slowly
+        // and the profile cache never fills. Metadata is well replicated on the seeds, the
+        // account's own relays and the profile archive; a viewed profile's write relays cover
+        // outbox publishers that only announce metadata there.
+        val relays = (state.value.relays + listOf("wss://purplepag.es") + relayLists[viewedProfile]?.write.orEmpty())
+            .distinct().filter(::healthy).take(10)
+        // Sorted targets keep the filters identical when the same authors reoccur in another
+        // order, so the client skips re-sending the request on snapshot churn.
+        val sorted = targets.sorted()
+        val metadata = relays.associate { url ->
+            url.normalizeRelayUrl() to sorted.chunked(16).map { Filter(authors = it, kinds = listOf(0), limit = it.size) }
+        }.filterValues { it.isNotEmpty() }
+        if (metadata.isEmpty()) client.unsubscribe("profiles")
+        else client.subscribe("profiles", metadata, listener)
+    }
+
     /** Small batches keep metadata filters within common relay request limits. */
     private fun subscribeReadingData() {
         if (!active) return
@@ -849,12 +909,7 @@ class FeatherRepository(context: Context) {
             client.subscribe("visible-deletions", routes.associate { it.normalizeRelayUrl() to filters }, listener)
         }
 
-        val targets = (listOfNotNull(state.value.publicKey, viewedProfile) + profileAuthors + detailAuthors.values.flatten().distinct().take(64)).distinct().take(160)
-        val metadata = routingPool.associate { url ->
-            url.normalizeRelayUrl() to targets.chunked(16).map { Filter(authors = it, kinds = listOf(0), limit = it.size) }
-        }.filterValues { it.isNotEmpty() }
-        if (metadata.isEmpty()) client.unsubscribe("profiles")
-        else client.subscribe("profiles", metadata, listener)
+        subscribeProfiles()
         if (engagementIds.isEmpty()) client.unsubscribe("engagement")
         else client.subscribe("engagement", (routingPool.filter { it != "wss://purplepag.es" } + if (engagementApps.isNotEmpty() || state.value.threadNotes.any { it.isAppDiscussion() }) listOf(ZAPSTORE_RELAY) else emptyList()).distinct().associate { url ->
             url.normalizeRelayUrl() to (engagementIds.chunked(6).flatMap { ids ->
@@ -952,7 +1007,96 @@ class FeatherRepository(context: Context) {
         embeddedIds.asSequence().filter(eventIdPattern::matches).take(24).forEach { id ->
             result[id] = result[id].orEmpty() + embeddedRelays
         }
+        synchronized(uiEmbeddedWants) {
+            uiEmbeddedWants.forEach { (id, relays) ->
+                result[id] = result[id].orEmpty() +
+                    (relays.mapNotNull(Protocol::relay).filter { it in routingPool }.ifEmpty { embeddedRelays }.toSet())
+            }
+        }
         return result.filterKeys { it !in state.value.deletedNotes }
+    }
+
+    /** Embedded events the reader is already showing resolve at render time through the same
+        shared cache-first path, instead of waiting for the snapshot to notice them. */
+    private val uiEmbeddedWants = object : LinkedHashMap<String, Set<String>>(32, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Set<String>>?) = size > 32
+    }
+
+    fun requestEmbeddedEvents(references: Collection<NostrContent.Reference>) {
+        var wake = false
+        val addresses = mutableListOf<NostrContent.Reference>()
+        synchronized(uiEmbeddedWants) {
+            references.forEach { ref ->
+                val id = ref.id
+                if (id in state.value.embedded || id in state.value.deletedNotes) return@forEach
+                if (ref.addressFilter() != null) { addresses.add(ref); return@forEach }
+                if (eventIdPattern.matches(id) && (ref.kind == null || ref.kind in readableKinds)) {
+                    // Wake even when already registered: pendingEventLookups is cleared on
+                    // background, and the reconcile re-reads the cache and re-requests.
+                    uiEmbeddedWants[id] = ref.relays.toSet()
+                    wake = true
+                }
+            }
+        }
+        if (addresses.isNotEmpty()) scope.launch { resolveEmbeddedAddresses(addresses.take(16)) }
+        if (wake) eventLookupChanges.trySend(Unit)
+    }
+
+    private val embeddedAddressCooldowns = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /** Cached addressables render at once; uncached ones get one bounded targeted fetch. */
+    private suspend fun resolveEmbeddedAddresses(refs: List<NostrContent.Reference>) {
+        val cached = mutex.withLock {
+            refs.mapNotNull { ref ->
+                val filter = ref.addressFilter() ?: return@mapNotNull null
+                db.query<Event>(filter).maxWithOrNull(compareBy<Event> { it.createdAt }.thenBy { it.id })?.let { ref.id to it }
+            }.toMap()
+        }
+        if (cached.isNotEmpty()) {
+            confirmedMissingAddresses.removeAll(cached.keys)
+            if (active) {
+                _state.update { it.copy(embedded = (it.embedded + cached).entries.toList().takeLast(128).associate { entry -> entry.toPair() }) }
+                changed.tryEmit(Unit)
+                publishMissingEmbeds()
+            }
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        val missing = refs.filter { ref ->
+            val last = embeddedAddressCooldowns[ref.id]
+            ref.id !in cached && ref.id !in state.value.embedded && (last == null || now - last > 60_000)
+        }.take(8)
+        if (missing.isEmpty() || !active) { publishMissingEmbeds(); return }
+        missing.forEach { embeddedAddressCooldowns[it.id] = now }
+        if (embeddedAddressCooldowns.size > 512) embeddedAddressCooldowns.entries.removeAll { now - it.value > 600_000 }
+        val routes = (missing.flatMap { it.relays } + state.value.relays + RelayDefaults.seeds.take(2)).mapNotNull(Protocol::relay).distinct().filter(::healthy).take(6)
+        val filters = missing.mapNotNull { it.addressFilter()?.toJson() }
+        try {
+            // Only relays that answered EOSE confirm absence; a timed-out lane stays "looking".
+            val completed = withTimeoutOrNull(12_000) {
+                accountQueries.completed(routes, filters) { relay, event ->
+                    event.kind in readableKinds && missing.any { it.addressFilter()?.match(event) == true } && accept(event, seenAt = relay)
+                }
+            }
+            if (completed != null && completed.containsAll(routes.mapNotNull(Protocol::relay))) {
+                confirmedMissingAddresses.addAll(missing.map { it.id })
+                publishMissingEmbeds()
+            }
+            resolveEmbeddedAddresses(missing)
+        } catch (e: CancellationException) { throw e } catch (e: Exception) {
+            android.util.Log.w("FeatherRepository", "Could not fetch embedded addressable", e)
+        }
+    }
+
+    // A relay that answers EOSE without the event has confirmed it holds nothing; the id is
+    // only "unavailable" once every routed relay has done so. Until then the reader is looking.
+    private val eosedLookupRoutes = java.util.concurrent.ConcurrentHashMap<String, MutableSet<String>>()
+    private val confirmedMissingAddresses = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    private var confirmedMissingEvents: Set<String> = emptySet()
+
+    private fun publishMissingEmbeds() {
+        if (!active) return
+        val missing = confirmedMissingEvents + confirmedMissingAddresses
+        if (missing != state.value.unavailableEmbeds) _state.update { it.copy(unavailableEmbeds = missing) }
     }
 
     private suspend fun reconcileEventLookups(retryId: String? = null) = mutex.withLock {
@@ -969,6 +1113,15 @@ class FeatherRepository(context: Context) {
             if (retryId != null && retryId in pendingEventLookups) client.unsubscribe("event-ids")
             sendEventLookups()
         }
+        // A pending id whose every routed relay has answered EOSE is confirmed absent.
+        val confirmed = synchronized(eosedLookupRoutes) {
+            if (eosedLookupRoutes.size > 256) eosedLookupRoutes.keys.retainAll(pendingEventLookups.keys + confirmedMissingEvents)
+            pendingEventLookups.keys.filter { id ->
+                val routes = pendingEventLookups[id].orEmpty()
+                routes.isNotEmpty() && eosedLookupRoutes[id].orEmpty().containsAll(routes)
+            }.toSet().also { confirmedMissingEvents = it }
+        }
+        publishMissingEmbeds()
         // Let every consumer render the same cached copy, even if it came from another screen.
         val readable = cached.filterValues { it.kind in readableKinds }
         if (readable.any { (id, event) -> state.value.embedded[id]?.id != event.id }) {
@@ -1061,7 +1214,15 @@ class FeatherRepository(context: Context) {
                     return false
                 }
                 when (outcome) {
-                    IEventStore.InsertOutcome.Accepted -> verified[event.id] = true
+                    IEventStore.InsertOutcome.Accepted -> {
+                        verified[event.id] = true
+                        // Names must show promptly, but coalesced: one recomposition per batch,
+                        // not one per name, so a resolving scroll burst never stutters the feed.
+                        if (event.kind == 0 && active) {
+                            pendingProfileMerges[event.pubKey] = profileOf(event)
+                            profileMergeWake.trySend(Unit)
+                        }
+                    }
                     is IEventStore.InsertOutcome.Rejected -> {
                         val duplicate = outcome.reason.startsWith("duplicate:")
                         verified[event.id] = duplicate
@@ -1525,7 +1686,17 @@ class FeatherRepository(context: Context) {
         val authors = (listOfNotNull(key, viewedProfile) + visible.map { it.pubKey } +
             refs.filter { it.profile }.map { it.id } + refs.mapNotNull { it.author } + embedded.values.map { it.pubKey } +
             embedded.values.flatMap(NostrContent::references).filter { it.profile }.map { it.id } + detailAuthors.values.flatten().distinct().take(64) + pollVoterAuthors + activity.filter { it.kind == 9735 }.mapNotNull { it.tagValue("p") }.take(24)).distinct().take(160)
+        val priorAuthors = profileAuthors
         val profiles = cachedProfiles(authors)
+        if (priorAuthors.toSet() != authors.toSet()) {
+            profileAuthors = authors
+            // Referenced names must not wait on engagement counting or the rest of the snapshot.
+            if (key == state.value.publicKey && profile == viewedProfile && thread == viewedThread && hashtag == viewedHashtag) {
+                _state.update { if (it.publicKey == key) it.copy(profiles = it.profiles + profiles) else it }
+            }
+            fetchNewProfiles(authors.filter { it !in profiles && it !in state.value.profiles })
+            if (active) subscribeProfiles()
+        }
         val counts = countTargets.associate { target ->
             var zappedByAccount: String? = null
             val stableActivity = countedActivity[target.id].orEmpty()
@@ -1578,10 +1749,9 @@ class FeatherRepository(context: Context) {
         rememberDeleted(embedded.values + all + profileEvents + hashtagNotes + notifications)
         deletionTargets = (visible + reposts + embedded.values).distinctBy { it.id }.filterNot(noteDeletions::hides).take(48)
         val packsChanged = emojiPackRequests != packs
-        val readingChanged = references != refs || profileAuthors != authors || packsChanged
+        val readingChanged = references != refs || priorAuthors != authors || packsChanged
         references = refs
         embeddedIds = quoteIds + addressRefs.map { it.id }
-        profileAuthors = authors
         if (key != _state.value.publicKey || profile != viewedProfile || tab != profileTab || hashtag != viewedHashtag || hashtagAuthor != viewedHashtagAuthor || hashtagTab != selectedHashtagTab || thread != viewedThread || ancestorLimit != threadAncestorLimit || requestedParent != threadRequestedParent || feed != selectedFeed || feedCeiling != feedUntil || profileCeiling != profileUntil || profileCount != profileLimit || hashtagCeiling != hashtagUntil || hashtagCount != hashtagLimit) { changed.tryEmit(Unit); return }
         emojiPackRequests = packs
         val lists = mutex.withLock { db.query<Event>(Filter(kinds = listOf(10002), limit = 1100)) }
@@ -1695,8 +1865,68 @@ class FeatherRepository(context: Context) {
         }
     }.flowOn(Dispatchers.IO)
 
-    private val zapProfileRequests = mutableMapOf<List<String>, Deferred<Map<String, Profile>>>()
+    /** A first look at an unknown referenced author rides the finite query lane, not the
+        rotating metadata subscription, so a fresh name resolves in one relay round trip. */
+    private val profileFetchCooldowns = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
+    private fun fetchNewProfiles(authors: List<String>) {
+        if (!active) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        val wanted = authors.filter { author ->
+            val last = profileFetchCooldowns[author]
+            last == null || now - last > 30_000
+        }.take(16)
+        if (wanted.isEmpty()) return
+        wanted.forEach { profileFetchCooldowns[it] = now }
+        if (profileFetchCooldowns.size > 1024) profileFetchCooldowns.entries.removeAll { now - it.value > 300_000 }
+        scope.launch {
+            val routes = (state.value.relays + listOf("wss://purplepag.es")).distinct().filter(::healthy).take(6)
+            val filters = wanted.chunked(16).map { chunk -> Filter(authors = chunk, kinds = listOf(0), limit = chunk.size) }
+            try {
+                withTimeoutOrNull(15_000) {
+                    accountQueries.completed(routes, filters.map { it.toJson() }) { relay, event ->
+                        filters.any { it.match(event) } && accept(event, seenAt = relay)
+                    }
+                }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) {
+                android.util.Log.w("FeatherRepository", "Could not fetch profile metadata", e)
+            }
+        }
+    }
+
+    /** Render-time lookup: a note can be on screen before the snapshot pass merges its
+        referenced names into state. Cache first; unknown keys fall to the bounded fetch lane. */
+    private fun flushPendingProfiles() {
+        if (pendingProfileMerges.isEmpty() || !active) return
+        val batch = buildMap {
+            pendingProfileMerges.keys.forEach { key -> pendingProfileMerges.remove(key)?.let { put(key, it) } }
+        }
+        if (batch.isNotEmpty()) _state.update { it.copy(profiles = it.profiles + batch) }
+    }
+
+    private val requestedProfileLookups = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+
+    fun requestProfiles(keys: Collection<String>) {
+        val wanted = keys.filter { key -> key.length == 64 && key !in state.value.profiles && requestedProfileLookups.add(key) }.take(64)
+        if (wanted.isEmpty()) return
+        scope.launch {
+            try {
+                ready.await()
+                val found = cachedProfiles(wanted)
+                // Through the shared coalescing buffer: a fling that composes many notes at once
+                // must produce one merged recomposition, not one per note.
+                if (found.isNotEmpty()) {
+                    pendingProfileMerges.putAll(found)
+                    profileMergeWake.trySend(Unit)
+                }
+                fetchNewProfiles(wanted.filter { it !in found })
+            } catch (e: CancellationException) { throw e } catch (e: Exception) {
+                android.util.Log.w("FeatherRepository", "Could not resolve profile metadata", e)
+            } finally { wanted.forEach { requestedProfileLookups.remove(it) } }
+        }
+    }
+
+    private val zapProfileRequests = mutableMapOf<List<String>, Deferred<Map<String, Profile>>>()
     /** Resolve kind-0 metadata before a new payment, independently of UI profile refresh. */
     internal suspend fun zapRecipientProfiles(note: Event): Map<String, Profile> = withContext(Dispatchers.IO) {
         ready.await()
@@ -1764,21 +1994,23 @@ class FeatherRepository(context: Context) {
 
     private suspend fun cachedProfiles(authors: List<String>): Map<String, Profile> = if (authors.isEmpty()) emptyMap() else mutex.withLock {
             db.query<Event>(Filter(kinds = listOf(0), authors = authors, limit = authors.size))
-        }.associate { event ->
-            val data = runCatching { JSONObject(event.content) }.getOrNull()
-            val about = data?.optString("about").orEmpty().take(2000).withoutObjectMarkers()
-            event.pubKey to Profile(
-                data?.optString("display_name")?.takeIf { it.isNotBlank() } ?: data?.optString("name")?.takeIf { it.isNotBlank() } ?: shortKey(event.pubKey),
-                about,
-                MediaContent.secureUrl(data?.optString("picture")?.trim()),
-                data?.optString("name")?.trim()?.takeIf { it.isNotBlank() },
-                listOf("banner", "cover", "header").firstNotNullOfOrNull { field -> MediaContent.secureUrl(data?.optString(field)?.trim()) },
-                data?.optString("lud16")?.takeIf { it.isNotBlank() } ?: data?.optString("lud06")?.takeIf { it.isNotBlank() },
-                NostrContent.tokens(about, event),
-                (data?.opt("nip05") as? String)?.trim()?.takeIf { it.isNotEmpty() }?.take(512),
-                profileWebsite(data?.opt("website") as? String),
-            )
-        }
+        }.associate { event -> event.pubKey to profileOf(event) }
+
+    private fun profileOf(event: Event): Profile {
+        val data = runCatching { JSONObject(event.content) }.getOrNull()
+        val about = data?.optString("about").orEmpty().take(2000).withoutObjectMarkers()
+        return Profile(
+            data?.optString("display_name")?.takeIf { it.isNotBlank() } ?: data?.optString("name")?.takeIf { it.isNotBlank() } ?: shortKey(event.pubKey),
+            about,
+            MediaContent.secureUrl(data?.optString("picture")?.trim()),
+            data?.optString("name")?.trim()?.takeIf { it.isNotBlank() },
+            listOf("banner", "cover", "header").firstNotNullOfOrNull { field -> MediaContent.secureUrl(data?.optString(field)?.trim()) },
+            data?.optString("lud16")?.takeIf { it.isNotBlank() } ?: data?.optString("lud06")?.takeIf { it.isNotBlank() },
+            NostrContent.tokens(about, event),
+            (data?.opt("nip05") as? String)?.trim()?.takeIf { it.isNotEmpty() }?.take(512),
+            profileWebsite(data?.opt("website") as? String),
+        )
+    }
 
     private suspend fun trimCache() = mutex.withLock { trimCacheLocked() }
     private suspend fun trimCacheLocked() {
@@ -2518,9 +2750,13 @@ class FeatherRepository(context: Context) {
                         listOfNotNull(tab.takeIf { events.any(tab::matches) })).distinct().sortedBy { it.profileOrderPriority })
             }
             // Author metadata is optional: make cached content visible before querying it.
+            // Biography links resolve in the same cache pass, so linked names never wait on relays.
             val profiles = cachedProfiles((listOf(author) + events.take(24).map { it.pubKey }).distinct())
             ensureActive()
-            if (current()) _state.update { if (current()) it.copy(profiles = it.profiles + profiles) else it }
+            val linked = profiles[author]?.aboutTokens.orEmpty()
+                .mapNotNull { token -> token.reference?.takeIf { it.profile }?.id }.distinct().take(32)
+            val resolved = if (linked.isEmpty()) profiles else profiles + cachedProfiles(linked)
+            if (current()) _state.update { if (current()) it.copy(profiles = it.profiles + resolved) else it }
         }
     }
 
@@ -2880,5 +3116,9 @@ class FeatherRepository(context: Context) {
         historyJob?.start()
         return true
     }
-    companion object { fun shortKey(key: String): String = "${key.take(8)}…${key.takeLast(4)}" }
+    companion object {
+        fun shortKey(key: String): String = "${key.take(8)}…${key.takeLast(4)}"
+        /** Unresolved pubkeys render as a recognizable bech32 fragment instead of raw hex. */
+        fun shortNpub(key: String): String = runCatching { Protocol.npub(key).take(14) + "…" }.getOrDefault(shortKey(key))
+    }
 }

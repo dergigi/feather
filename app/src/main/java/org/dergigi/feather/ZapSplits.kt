@@ -57,7 +57,7 @@ internal fun ZapSplitRow(note: Event, onProfile: (String) -> Unit = LocalZapSpli
         LazyRow(Modifier.weight(1f)) {
             items(splits, key = { it.pubkey }) { split ->
                 val profile = profiles[split.pubkey]
-                val name = profile?.name ?: FeatherRepository.shortKey(split.pubkey)
+                val name = profile?.name ?: FeatherRepository.shortNpub(split.pubkey)
                 val label = "$name · ${split.percentage}"
                 Column(Modifier.widthIn(min = 38.dp).clickable { onProfile(split.pubkey) }
                     .semantics { contentDescription = label }.padding(horizontal = 2.dp, vertical = 2.dp),

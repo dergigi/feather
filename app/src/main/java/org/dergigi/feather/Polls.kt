@@ -133,7 +133,7 @@ internal fun PollContent(event: Event, state: FeedState, onReference: (NostrCont
             if (content.isNotBlank()) NoteSelection(event) { LinkText(content, style = MaterialTheme.typography.bodyLarge) }
         }
         quotes.forEach { reference ->
-            EmbeddedNote(reference, state.embedded[reference.id], state.profiles, "$mediaKey:${reference.id}", onReference)
+            EmbeddedNote(reference, state.embedded[reference.id], state.profiles, reference.id in state.unavailableEmbeds, "$mediaKey:${reference.id}", onReference)
         }
         if (attachments.isNotEmpty()) NoteMedia(event, attachments, mediaKey)
         if (poll == null) {
@@ -199,7 +199,7 @@ private fun PollVotersSheet(poll: Poll, optionImages: Map<String, MediaContent.A
         LazyColumn(state = list, modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(ballots, key = { it.author }) { ballot ->
                 val profile = state.profiles[ballot.author]
-                val name = profile?.name ?: FeatherRepository.shortKey(ballot.author)
+                val name = profile?.name ?: FeatherRepository.shortNpub(ballot.author)
                 Row(Modifier.fillMaxWidth().clickable {
                     onDismiss()
                     onReference(NostrContent.Reference(ballot.author, profile = true))

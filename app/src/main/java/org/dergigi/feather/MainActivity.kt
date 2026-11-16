@@ -577,7 +577,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                         style = MaterialTheme.typography.titleMedium)
                 }
                 if (screen == "profile" && profileKey != null && showProfileToolbarName) {
-                    Text(s.profiles[profileKey]?.name ?: FeatherRepository.shortKey(profileKey),
+                    Text(s.profiles[profileKey]?.name ?: FeatherRepository.shortNpub(profileKey),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleMedium)
                 }
@@ -587,7 +587,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                         Text("#${hashtag.orEmpty()}", maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
                     } else {
                         val profile = s.profiles[author]
-                        val name = profile?.name ?: FeatherRepository.shortKey(author)
+                        val name = profile?.name ?: FeatherRepository.shortNpub(author)
                         Text(stringResource(R.string.ui_hashtag_by_author, hashtag.orEmpty(), name),
                             modifier = Modifier.clickable { openProfile(author) },
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -669,7 +669,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                 if (screen == "feed") {
                     IconButton(onClick = { s.publicKey?.let { openProfile(it) } ?: run { showAccount = true } }, modifier = (if (s.publicKey != null) Modifier.size(RoundControlSize) else toolbarButtonSurface).semantics { contentDescription = "Account" }) {
                         val account = s.profiles[s.publicKey]
-                        if (s.publicKey != null) Avatar(account?.name ?: FeatherRepository.shortKey(s.publicKey!!), ROUND_CONTROL_DP, account?.picture)
+                        if (s.publicKey != null) Avatar(account?.name ?: FeatherRepository.shortNpub(s.publicKey!!), ROUND_CONTROL_DP, account?.picture)
                         else Icon(Icons.Default.Person, null, Modifier.size(22.dp))
                     }
                 }
@@ -692,7 +692,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                     alpha = opacity
                     compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
                 }, showShadow = !activeListState.isScrollInProgress && opacity == 1f, picturePost = profileTab == ProfileTab.PHOTOS,
-                    description = if (profileKey == s.publicKey) "Create post" else "Create post mentioning ${s.profiles[profileKey]?.name ?: FeatherRepository.shortKey(profileKey)}")
+                    description = if (profileKey == s.publicKey) "Create post" else "Create post mentioning ${s.profiles[profileKey]?.name ?: FeatherRepository.shortNpub(profileKey)}")
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -948,11 +948,11 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                                     top = if (p?.banner != null) 0.dp else 24.dp, bottom = 24.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                        ModerationAvatar(key, p?.name ?: FeatherRepository.shortKey(key), p?.picture, size = 56, slotSize = 56, expansionKey = profileModerationKey, profileToggle = true,
+                                        ModerationAvatar(key, p?.name ?: FeatherRepository.shortNpub(key), p?.picture, size = 56, slotSize = 56, expansionKey = profileModerationKey, profileToggle = true,
                                             onClick = { if (profileImages.isNotEmpty()) openGallery(profileImages, 0, expandAlbum = false) })
                                         Spacer(Modifier.width(14.dp))
                                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                            Text(p?.name ?: FeatherRepository.shortKey(key),
+                                            Text(p?.name ?: FeatherRepository.shortNpub(key),
                                                 modifier = Modifier.avatarModerationName(key, profileModerationKey) {}.onGloballyPositioned {
                                                     profileNameBottom = it.positionInWindow().y + it.size.height
                                                 }, style = MaterialTheme.typography.titleLarge,
@@ -1042,7 +1042,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                                         collection.tagValue("title")?.takeIf { it.isNotBlank() }?.let { Text(it, Modifier.padding(horizontal = 24.dp, vertical = 12.dp), style = MaterialTheme.typography.titleSmall) }
                                     }
                                     val person = s.profiles[reference.id]
-                                    val name = person?.name ?: FeatherRepository.shortKey(reference.id)
+                                    val name = person?.name ?: FeatherRepository.shortNpub(reference.id)
                                     ProfileListRow(reference.id, name, person?.picture, person?.nip05,
                                         reference.id in s.followedAccounts) { openReference(reference) }
                                 }
@@ -1054,7 +1054,7 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                                         collection.tagValue("title")?.takeIf { it.isNotBlank() }?.let { title ->
                                             Text(title, style = MaterialTheme.typography.labelMedium)
                                         }
-                                        EmbeddedNote(reference, s.embedded[reference.id], s.profiles, "bookmark:${collection.id}:${reference.id}", ::openReference)
+                                        EmbeddedNote(reference, s.embedded[reference.id], s.profiles, reference.id in s.unavailableEmbeds, "bookmark:${collection.id}:${reference.id}", ::openReference)
                                     }
                                 }
                             }
@@ -1152,8 +1152,8 @@ internal fun FeatherReader(vm: FeatherViewModel, navigation: ReaderNavigation, e
                 val key = s.publicKey
                 val profile = s.profiles[key]
                 if (key != null) {
-                    AccountAvatar(profile?.name ?: FeatherRepository.shortKey(key), 72, profile?.picture)
-                    Text(profile?.name ?: FeatherRepository.shortKey(key), style = MaterialTheme.typography.titleLarge,
+                    AccountAvatar(profile?.name ?: FeatherRepository.shortNpub(key), 72, profile?.picture)
+                    Text(profile?.name ?: FeatherRepository.shortNpub(key), style = MaterialTheme.typography.titleLarge,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         FilledTonalIconButton(onClick = { showAccount = false; openProfile(key) }, modifier = Modifier.size(RoundControlSize)) { Icon(Icons.Default.Person, stringResource(R.string.ui_view_your_profile)) }
@@ -1222,7 +1222,7 @@ private fun MatchedHashtagBadge(note: Event, followed: Set<String>, onReference:
 @Composable
 private fun RepostAttribution(reposts: List<Event>, state: FeedState, onProfile: (String) -> Unit) {
     var showPeople by remember { mutableStateOf(false) }
-    val names = reposts.take(2).map { state.profiles[it.pubKey]?.name ?: FeatherRepository.shortKey(it.pubKey) }
+    val names = reposts.take(2).map { state.profiles[it.pubKey]?.name ?: FeatherRepository.shortNpub(it.pubKey) }
     val label = when (reposts.size) {
         1 -> stringResource(R.string.ui_reposted_by_one, names.first())
         2 -> stringResource(R.string.ui_reposted_by_two, names[0], names[1])
@@ -1242,7 +1242,7 @@ private fun RepostAttribution(reposts: List<Event>, state: FeedState, onProfile:
                 items(reposts.size, key = { reposts[it].pubKey }) { index ->
                     val author = reposts[index].pubKey
                     val profile = state.profiles[author]
-                    val name = profile?.name ?: FeatherRepository.shortKey(author)
+                    val name = profile?.name ?: FeatherRepository.shortNpub(author)
                     Row(Modifier.fillMaxWidth().clickable { showPeople = false; onProfile(author) }.padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Avatar(name, picture = profile?.picture)
@@ -1271,7 +1271,7 @@ private fun RepostRow(repost: Event, state: FeedState, onReference: (NostrConten
             NoteRow(original, state, onReference, { onProfile(original.pubKey) }, { onOpen(original) }, repost = repost)
         } else {
             Box(Modifier.fillMaxWidth().clickable(onClickLabel = "Read conversation") { onReference(target) }.padding(24.dp)) {
-                EmbeddedNote(target, null, state.profiles, repost.id, onReference)
+                EmbeddedNote(target, null, state.profiles, target.id in state.unavailableEmbeds, repost.id, onReference)
             }
         }
     }
@@ -1288,13 +1288,14 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
         return
     }
     val profile = state.profiles[note.pubKey]
+    if (profile == null) ResolveProfiles(listOf(note.pubKey))
     if (note.kind == 30023 && compact) {
-        ArticleListRow(note, profile?.name ?: FeatherRepository.shortKey(note.pubKey), profile?.picture, onProfile, onOpen)
+        ArticleListRow(note, profile?.name ?: FeatherRepository.shortNpub(note.pubKey), profile?.picture, onProfile, onOpen)
         return
     }
     var expanded by rememberSaveable(note.id) { mutableStateOf(false) }
     var detailsExpanded by rememberSaveable(note.id) { mutableStateOf(false) }
-    val name = profile?.name ?: FeatherRepository.shortKey(note.pubKey)
+    val name = profile?.name ?: FeatherRepository.shortNpub(note.pubKey)
     val moderationKey = remember(note.id) { Any() }
     val articleDetail = note.kind == 30023 && !compact
     val threaded = threadRow != null && note.kind in listOf(1, 1111, 1244, 1222)
@@ -1359,7 +1360,7 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
                 ReactionContent(note)
                 reactionTarget(note)?.let { reference ->
                     Spacer(Modifier.height(12.dp))
-                    EmbeddedNote(reference, state.embedded[reference.id], state.profiles, "${repost?.id ?: note.id}:${reference.id}", onReference, compact)
+                    EmbeddedNote(reference, state.embedded[reference.id], state.profiles, reference.id in state.unavailableEmbeds, "${repost?.id ?: note.id}:${reference.id}", onReference, compact)
                 }
             }
             else -> {
@@ -1412,7 +1413,7 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
                 }
             } else if (reference != null) {
                 if (body.isNotBlank() || index > 0) Spacer(Modifier.height(6.dp))
-                EmbeddedNote(reference, state.embedded[reference.id], state.profiles, "${repost?.id ?: note.id}:${reference.id}", onReference, compact)
+                EmbeddedNote(reference, state.embedded[reference.id], state.profiles, reference.id in state.unavailableEmbeds, "${repost?.id ?: note.id}:${reference.id}", onReference, compact)
             }
         }
             }
@@ -1574,7 +1575,7 @@ private fun ConcealedConversationNote(row: ConversationRow, profiles: Map<String
         AnimatedVisibility(revealed && copy != null, enter = fadeIn(tween(140)) + expandVertically(tween(180)),
             exit = fadeOut(tween(140)) + shrinkVertically(tween(180))) {
             Column(Modifier.padding(start = 72.dp, end = 24.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (muted) profiles[copy?.pubKey]?.name ?: FeatherRepository.shortKey(copy?.pubKey.orEmpty())
+                Text(if (muted) profiles[copy?.pubKey]?.name ?: FeatherRepository.shortNpub(copy?.pubKey.orEmpty())
                     else stringResource(R.string.ui_cached_version_deleted_by_author),
                     modifier = if (muted && copy != null) Modifier.clickable { onProfile(copy.pubKey) } else Modifier,
                     style = if (muted) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelSmall,
@@ -1597,7 +1598,7 @@ private fun ReplyContext(note: Event, embedded: Map<String, Event>, profiles: Ma
     val filter = LocalContentFilter.current
     if (filter.hides(reference) || (parent != null && filter.hides(parent))) return
     val author = parent?.pubKey ?: reference.author
-    val name = profiles[author]?.name ?: FeatherRepository.shortKey(author ?: reference.id)
+    val name = profiles[author]?.name ?: author?.let(FeatherRepository::shortNpub) ?: FeatherRepository.shortNpub(reference.id)
     ReplyContextRow(parent, name, parent?.kind ?: reference.kind, loading) { onReference(reference) }
 }
 
@@ -1609,12 +1610,24 @@ internal fun richNoteText(body: String, note: Event, profiles: Map<String, Profi
     return richText(body, tokens, profiles, onReference, embeddedIds)
 }
 
+/** Cached names must resolve at render time: a note can be on screen before the next
+    snapshot pass merges its referenced profiles into state. */
+@Composable
+internal fun ResolveProfiles(missing: Collection<String>) {
+    if (missing.isEmpty()) return
+    val repo = (LocalContext.current.applicationContext as FeatherApplication).repository
+    LaunchedEffect(missing) { repo.requestProfiles(missing) }
+}
+
 @Composable
 private fun richText(body: String, tokens: List<NostrContent.Token>, profiles: Map<String, Profile>,
     onReference: (NostrContent.Reference) -> Unit, embeddedIds: Set<String> = emptySet()): androidx.compose.ui.text.AnnotatedString {
     val open by rememberUpdatedState(onReference)
     val context = LocalContext.current
     val linkColor = MaterialTheme.colorScheme.primary
+    ResolveProfiles(tokens.mapNotNull { token ->
+        token.reference?.takeIf { it.profile && it.id !in profiles }?.id
+    })
     return remember(body, tokens, profiles, embeddedIds, linkColor, context) {
         buildAnnotatedString {
             var offset = 0
@@ -1624,7 +1637,7 @@ private fun richText(body: String, tokens: List<NostrContent.Token>, profiles: M
                 if (ref != null) {
                     if (ref.id !in embeddedIds || ref.profile) {
                         withLink(LinkAnnotation.Clickable(ref.copyableLink(token.text), TextLinkStyles(style = SpanStyle(color = linkColor))) { open(ref) }) {
-                            append(if (ref.hashtag != null) token.text else if (ref.profile) "@${profiles[ref.id]?.name ?: FeatherRepository.shortKey(ref.id)}" else "↗ ${FeatherRepository.shortKey(ref.id)}")
+                            append(if (ref.hashtag != null) token.text else if (ref.profile) "@${profiles[ref.id]?.name ?: FeatherRepository.shortNpub(ref.id)}" else "↗ ${FeatherRepository.shortNpub(ref.id)}")
                         }
                     }
                 } else if (token.url != null) {
@@ -1638,9 +1651,10 @@ private fun richText(body: String, tokens: List<NostrContent.Token>, profiles: M
 }
 
 @Composable
-internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profiles: Map<String, Profile>, mediaKey: String, onReference: (NostrContent.Reference) -> Unit, compact: Boolean = true, actions: (@Composable () -> Unit)? = null) {
+internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profiles: Map<String, Profile>, missing: Boolean = false, mediaKey: String = "", onReference: (NostrContent.Reference) -> Unit, compact: Boolean = true, actions: (@Composable () -> Unit)? = null) {
     val filter = LocalContentFilter.current
     if (filter.hides(reference) || (note != null && filter.hides(note))) return
+    ResolveProfiles(listOfNotNull(note?.pubKey, reference.author).filter { it !in profiles })
     if (note?.kind == 32267) {
         Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
             Column {
@@ -1654,7 +1668,7 @@ internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profi
         val profile = profiles[note.pubKey]
         Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
             Column {
-                ArticleListRow(note, profile?.name ?: FeatherRepository.shortKey(note.pubKey), profile?.picture,
+                ArticleListRow(note, profile?.name ?: FeatherRepository.shortNpub(note.pubKey), profile?.picture,
                     onProfile = { onReference(NostrContent.Reference(note.pubKey, profile = true)) },
                     onOpen = { onReference(reference) })
                 actions?.let { Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { it() } }
@@ -1666,22 +1680,23 @@ internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profi
         color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth(), tonalElevation = 0.dp) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (note == null) {
+                val repo = (LocalContext.current.applicationContext as FeatherApplication).repository
+                LaunchedEffect(reference.id) { repo.requestEmbeddedEvents(listOf(reference)) }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (reference.kind == 30023) {
-                        var waiting by remember(reference.id) { mutableStateOf(true) }
-                        LaunchedEffect(reference.id) { kotlinx.coroutines.delay(12_000); waiting = false }
-                        if (waiting) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(painterResource(R.drawable.article), stringResource(R.string.ui_article_unavailable_locally_open_externally), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text(profiles[reference.author]?.name ?: FeatherRepository.shortKey(reference.author ?: reference.id),
+                    if (missing) {
+                        if (reference.kind == 30023) Icon(painterResource(R.drawable.article), stringResource(R.string.ui_article_unavailable_locally_open_externally), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                        else Icon(painterResource(R.drawable.conversation), stringResource(R.string.ui_open_referenced_note), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text(reference.author?.let { profiles[it]?.name } ?: stringResource(R.string.ui_note_unavailable),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     } else {
-                        Icon(painterResource(R.drawable.conversation), stringResource(R.string.ui_open_referenced_note), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text(FeatherRepository.shortKey(reference.id), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text(stringResource(R.string.ui_looking_for_note),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
                 val profile = profiles[note.pubKey]
-                val name = profile?.name ?: FeatherRepository.shortKey(note.pubKey)
+                val name = profile?.name ?: FeatherRepository.shortNpub(note.pubKey)
                 val moderationKey = remember(note.id) { Any() }
                 Row(Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically) {
@@ -1800,8 +1815,8 @@ private fun Settings(vm: FeatherViewModel, state: FeedState, onChange: (Boolean?
         state.publicKey?.let { key ->
             val profile = state.profiles[key]
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AccountAvatar(profile?.name ?: FeatherRepository.shortKey(key), 40, profile?.picture)
-                Text(profile?.name ?: FeatherRepository.shortKey(key), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
+                AccountAvatar(profile?.name ?: FeatherRepository.shortNpub(key), 40, profile?.picture)
+                Text(profile?.name ?: FeatherRepository.shortNpub(key), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 FilledTonalIconButton(onClick = onWallet, modifier = Modifier.size(RoundControlSize)) { Icon(painterResource(R.drawable.wallet), stringResource(R.string.ui_wallet_21_sats_per_zap)) }
                 FilledTonalIconButton(onClick = onLogout, modifier = Modifier.size(RoundControlSize)) { Icon(Icons.AutoMirrored.Filled.ExitToApp, stringResource(R.string.ui_log_out)) }
@@ -1922,7 +1937,7 @@ private fun ProfileBiography(profileKey: String, profile: Profile, state: FeedSt
                     LinkText(richText(body, tokens, state.profiles, onReference), style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp))
                 }
                 val reference = token.reference!!
-                EmbeddedNote(reference, state.embedded[reference.id], state.profiles, "bio:${reference.id}", onReference)
+                EmbeddedNote(reference, state.embedded[reference.id], state.profiles, reference.id in state.unavailableEmbeds, "bio:${reference.id}", onReference)
             }
             val (body, tokens) = textRange(quotes.lastOrNull()?.end ?: 0, profile.about.length)
             if (body.isNotBlank()) SelectionContainer {

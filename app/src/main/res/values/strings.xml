@@ -10,6 +10,8 @@
     <string name="ui_add_zap_message">Add zap message</string>
     <string name="ui_already_sent">Already sent</string>
     <string name="ui_article_unavailable_locally_open_externally">Article unavailable locally; open externally</string>
+    <string name="ui_note_unavailable">Note unavailable locally</string>
+    <string name="ui_looking_for_note">Looking for note</string>
     <string name="ui_attach_images_or_videos">Attach images or videos</string>
     <string name="ui_attached_video">Attached video</string>
     <string name="ui_back">Back</string>
