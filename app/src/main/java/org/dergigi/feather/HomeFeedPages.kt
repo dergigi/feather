@@ -391,6 +391,7 @@ internal fun FeedCategoryIcon(category: ProfileTab, modifier: Modifier = Modifie
         ProfileTab.BOOKMARKS -> R.drawable.bookmark
         ProfileTab.ARTICLES -> R.drawable.article
         ProfileTab.RECIPES -> R.drawable.recipe
+        ProfileTab.ATTESTATIONS -> R.drawable.attestation
         ProfileTab.PEOPLE -> R.drawable.people
         ProfileTab.PROJECTS -> R.drawable.project
         ProfileTab.APPS -> R.drawable.apps

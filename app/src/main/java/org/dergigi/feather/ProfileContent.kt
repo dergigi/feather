@@ -7,7 +7,7 @@ import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrl
 // Tabs describe existing public activity, never actions that publish events.
 internal val videoKinds = listOf(21, 22, 34235, 34236)
 internal val readableKinds = listOf(1, 1111, 17, 1068, 1621, 32267, 20, 9802, 30023, 30030, ATTESTATION_KIND) + videoKinds + voiceKinds
-internal val profileKinds = listOf(1, 1111, 17, 1068, 1621, 6, 16, 7, 9802, 20, 10003, 30003, 32267, 30023, 3, 30000, 30617, 30030, 9735, 9321) + videoKinds + voiceKinds
+internal val profileKinds = listOf(1, 1111, 17, 1068, 1621, 6, 16, 7, 9802, 20, 10003, 30003, 32267, 30023, 3, 30000, 30617, 30030, 9735, 9321, ATTESTATION_KIND) + videoKinds + voiceKinds
 
 enum class ProfileTab(val kinds: List<Int>, val label: String) {
     SEARCH(emptyList(), "Search"), NOTIFICATIONS(emptyList(), "Notifications"),
@@ -18,7 +18,7 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
     POLLS(listOf(1068), "Polls"), VOICE(voiceKinds, "Voice"), PODCASTS(podcastKinds, "Podcasts"),
     BOOKMARKS(listOf(10003, 30003), "Bookmarks"), APPS(listOf(32267), "Apps"),
     ARTICLES(listOf(30023), "Articles"), PEOPLE(listOf(3, 30000), "People"), PROJECTS(listOf(30617), "Projects"), EMOJI_PACKS(listOf(30030), "Emoji packs"),
-    ISSUES(listOf(1621), "Issues"), HASHTAGS(listOf(1), "Hashtags"), RECIPES(listOf(30023), "Recipes");
+    ISSUES(listOf(1621), "Issues"), HASHTAGS(listOf(1), "Hashtags"), RECIPES(listOf(30023), "Recipes"), ATTESTATIONS(listOf(ATTESTATION_KIND), "Attestations");
     internal val orderPriority: Int
         get() = when (this) {
             SEARCH -> -2
@@ -35,14 +35,15 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
             VOICE -> 9
             POLLS -> 10
             RECIPES -> 11
-            REACTIONS -> 12
-            HASHTAGS -> 13
-            BOOKMARKS -> 14
-            PEOPLE -> 15
-            APPS -> 16
-            PROJECTS -> 17
-            ISSUES -> 18
-            EMOJI_PACKS -> 19
+            ATTESTATIONS -> 12
+            REACTIONS -> 13
+            HASHTAGS -> 14
+            BOOKMARKS -> 15
+            PEOPLE -> 16
+            APPS -> 17
+            PROJECTS -> 18
+            ISSUES -> 19
+            EMOJI_PACKS -> 20
         }
 
     internal val profileOrderPriority: Int
@@ -63,6 +64,7 @@ enum class ProfileTab(val kinds: List<Int>, val label: String) {
         BOOKMARKS -> bookmarkReferences(event).isNotEmpty()
         PEOPLE -> peopleReferences(event).isNotEmpty()
         APPS, PROJECTS -> !event.tagValue("d").isNullOrBlank()
+        ATTESTATIONS -> event.tagValue("d") != null
         else -> true
     }
 }
@@ -88,12 +90,12 @@ internal fun bookmarkReferences(event: Event): List<NostrContent.Reference> {
     }.distinctBy { it.id }
 }
 
-/** Old versions retained by paging must never resurrect removed public bookmarks. */
+/** Retained pages must not resurrect superseded lists, articles or attestations. */
 internal fun latestProfileEvents(events: List<Event>): List<Event> = events
     .sortedWith(compareByDescending<Event> { it.createdAt }.thenBy { it.id })
     .distinctBy { event -> when {
         event.kind in listOf(3, 10003) -> "${event.kind}:${event.pubKey}"
-        event.kind in listOf(30000, 30003, 30023, 30030, 30617, 34235, 34236, 32267) -> "${event.kind}:${event.pubKey}:${event.tagValue("d").orEmpty()}"
+        event.kind in listOf(30000, 30003, 30023, 30030, 30617, 34235, 34236, 32267, ATTESTATION_KIND) -> "${event.kind}:${event.pubKey}:${event.tagValue("d").orEmpty()}"
         else -> event.id
     } }
 

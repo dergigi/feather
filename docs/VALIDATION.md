@@ -2311,3 +2311,11 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release event: `21aa33a00b40222b0dad468b80c00e1bbccae66c1f4baa84765f6bebc5fa5109`; asset event: `a3bd60fd0e810ebfd5552813b60f61362125072c3d73508a6d9c0329c0dc5f43`. Confirmed version, versionCode, size and hash on the catalog relay and 1.15.0 on the public app page.
 - Catalog bundle **1411 → 1412** contains both events. Its processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
 - No tests or emulators run; device rendering remains for live testing through Zapstore. No website updates/deployments or public announcements.
+
+
+## Attestation feed source review — 2026-11-16 (unreleased)
+
+- Added kind 31871 to the shared profile/feed discovery kinds and an Attestations category immediately after Recipes (priority 12) for the main feed and profiles. The icon is a native outlined shield vector with the existing accessible category label.
+- Traced the existing automatic tab discovery, selected-feed author filters, profile-author filters, pagination, cached previews, and generic note-row rendering. Home uses the account plus followed authors when logged in; profiles show the issuer’s own events. Existing hashtag categories also inherit the new category only for explicitly tagged matching events.
+- Added attestations to addressable-version deduplication using kind + issuer + d, preserving the existing newest-time/lowest-ID tie break. No status filtering: revoked, invalid, verifying and unknown states remain visible. Missing d tags do not create a feed category.
+- Reviewed the diff and checked vector XML and whitespace. No build, tests, emulator or publication requested or performed.

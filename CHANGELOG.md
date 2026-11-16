@@ -4,6 +4,11 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-16
+
+### Added
+- Add an automatically appearing Attestations tab immediately after Recipes in the main feed and profiles. Show attestations from followed accounts and your own account at home, and those issued by the viewed profile, retaining the latest version and all statuses.
+
 ## [1.15.0] - 2026-11-16
 
 ### Added
