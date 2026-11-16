@@ -2299,3 +2299,15 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Compared the public format with Quartz commit `04f8c5be56e43ea61de02ba56452579235f4f535` (AttestationEvent, StatusTag, ValidFromTag, ValidToTag) and Amethyst’s rendering at `1badcc5b7e4803286c601b003c35f03173cb6bf8`. Implemented Feather’s own theme-following card without dependency changes.
 - Source review covers native pointer routing, attestr.xyz URL recognition, e/a targets, unsupported target fallback, self-reference rejection, bounded nested rendering, shared cache-first ID requests, live address discovery, unknown statuses, date bounds, and existing moderation. The issuer’s status is displayed as a claim, not independently verified.
 - No build, tests, emulator, release, website change or public post: build/device validation remains pending the release request.
+
+
+## 1.15.0 release — 2026-11-16
+
+- Release/tag source: `ea1f40c7f06aed691a03b65fab2c19ef7afb2806`; Android versionCode **255**. Kind-31871 cards, native attestr.xyz links and bounded assertion previews are included.
+- The first build encountered Kotlin/JVM’s method-size limit in `snapshotContents`. Extracted embed resolution into its own suspend helper; the final `./gradlew assembleRelease` passed in **1m 26s**, including the release lint tasks.
+- APK signature verified with Android build-tools 37.0.0; certificate SHA-256 `78fadad16ed2625151be59c4ad9b8ab24a96e9e4e454751f40623fa149c278cd`. Launcher extraction check passed. APK version/name checked using aapt.
+- Signed APK: **16,482,305 bytes**, SHA-256 `caf822044dc58c817db87740b783b21941a622e8ed0b71eac7f74d90a5ed88f1`. Archived APK, R8 mapping and SHA256SUMS locally. GitHub release asset digest and the downloaded Zapstore CDN APK both match.
+- GitHub release: https://github.com/dergigi/feather/releases/tag/v1.15.0 . Verified its tag and both GRASP tags point to the release source. The ngit GitHub mirror authentication fallback required the existing gh credential helper.
+- Zapstore release event: `21aa33a00b40222b0dad468b80c00e1bbccae66c1f4baa84765f6bebc5fa5109`; asset event: `a3bd60fd0e810ebfd5552813b60f61362125072c3d73508a6d9c0329c0dc5f43`. Confirmed version, versionCode, size and hash on the catalog relay and 1.15.0 on the public app page.
+- Catalog bundle **1411 → 1412** contains both events. Its processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+- No tests or emulators run; device rendering remains for live testing through Zapstore. No website updates/deployments or public announcements.
