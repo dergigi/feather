@@ -2366,3 +2366,14 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Added bounded, background tag/shortcode parsing to the shared note, reply and quoted-note render paths. Inline alternate text retains the complete shortcode and original text offsets; link annotations and monospace spans are excluded. Invalid/missing tags remain text. Image failures restore text, with a fresh opportunity on foreground re-entry. Existing image caching, decoding and animation visibility rules are reused.
 - Reviewed collapsed text with repeated emoji, truncation inside a shortcode, surrogate pairs, existing expand controls, links, and text replacement during asynchronous parsing. Measurement uses the same placeholders as rendering; truncation backs up to the start of an emoji. No new subscriptions, settings or external PR changes.
 - Source whitespace checks passed. No automated tests or emulator run. Live device checks remain for the release: the supplied note in feed/thread/quote, selection/copy/quote-reply, animated emoji, collapsed/expanded text, failed-image fallback, and the separately prepared dialog-crash fix.
+
+
+## 1.17.0 release — 2026-11-18
+
+- Release/tag source: `5cd661868a10c224411c31e3350c002940b9f3ab`; Android versionCode **258**. Includes inline NIP-30 emoji in notes, replies and quoted notes, plus the lazy-content dialog crash fix. No external PRs merged.
+- `./gradlew assembleRelease` passed in **1m 21s**, including release lint and R8. Verified APK signature, version/name and generated BuildConfig source commit. Launcher extraction check passed. Certificate SHA-256: `78fadad16ed2625151be59c4ad9b8ab24a96e9e4e454751f40623fa149c278cd`.
+- Signed APK: **16,482,909 bytes**, SHA-256 `08915460198195cf3d3453e30baf9ec12cdc09dbd73d169c5adfd24b7b0c1b17`. Archived APK, mapping and SHA256SUMS. GitHub asset digest and downloaded Zapstore CDN APK match.
+- GitHub release: https://github.com/dergigi/feather/releases/tag/v1.17.0 . GitHub and both GRASP release tags point to the source commit; the GitHub mirror needed a direct push using the existing gh credential helper.
+- Zapstore release event: `dec257990fb2a49ab8665462b755b54386de752e4967b2995b87c39508b76a74`; asset event: `3cd605c9e88d0610236a4df8911ccde0cebdcd1537d29a2af47a8f732939a323`. Verified version, code, hash and certificate on the catalog relay, and 1.17.0 on the public app page.
+- Catalog bundle **1561 → 1562** contains the release and asset events. Processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+- No automated tests or emulators run. The crash trigger remains uncertain: the report identifies the dialog measurement path; the reporter recalled zapping/liking but not the exact control. Device validation remains for live testing through Zapstore. No website deployment or public issue replies/announcements.
