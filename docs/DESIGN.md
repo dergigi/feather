@@ -465,3 +465,11 @@ Add an icon-only Attestations tab with an outlined shield immediately after Reci
 ## Explicit feed refresh
 
 Pull-to-refresh closes and recreates only the selected home-feed subscription, even when its kind/author filters are unchanged. Keep automatic background subscription updates deduplicated. Retain cached content and the shared cache-first event-ID path. Capture the feed/account before waiting for repository readiness and discard the refresh if navigation or account changed. Restart the refresh timeout for the explicit request.
+
+## Dialogs containing lazy lists
+
+Use the shared ListContentDialog for the custom-zap form, repost people and matching followed hashtags. Material 3 AlertDialog performs intrinsic sizing that cannot measure lazy content, including nested zap-split rows. Keep BasicAlertDialog's standard window, accessibility and dismissal behavior, with the Material dialog surface and typography. Measure the body with bounded real constraints, retaining lazy list virtualization and keeping the confirm action outside the scrollable form. Custom zap fields scroll when the keyboard or font size reduces the available height.
+
+## Inline custom emoji
+
+Render NIP-30 custom emoji in shared note/reply and quoted-note text using only that event's emoji tags. Match case-sensitive ASCII shortcodes, accept HTTPS images through the existing media loader, and leave unknown shortcodes, links and monospace spans intact. Parse on the background dispatcher; bound each text block to 32 image definitions and 64 inline occurrences. Use font-relative placeholders, full shortcode alternate text for selection/copy, and restore plain text on image failure. Retain the media cache and animation visibility/lifecycle rules. Collapsed-note measurement must include emoji placeholders and never split one at the truncation boundary. No new relay requests, emoji service lookup or setting.

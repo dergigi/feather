@@ -2349,3 +2349,20 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release event: `c9b5e6b2980df62058103f3f914ca8d633476d54d59ffa11d4ac514c8cbd2162`; asset event: `a99346e4a8a7ecf4a9921055ed6d650f441a13360323bea23b375ec1d1de7abc`. Verified version, code, size, hash and certificate on the catalog relay, and 1.16.1 on the public app page.
 - Catalog bundle **1420 → 1422** contains both release and asset events. Its processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
 - No tests or emulators run; device validation remains for live testing through Zapstore. No website changes, deployments or public announcements.
+
+
+## Lazy-content dialog crash review — 2026-11-17 (unreleased)
+
+- Read the public crash report for Feather 1.16.1 (257), source `15d3ec422f2e4d8571b3144495574c052f1187ea`, on a Pixel 9 Pro XL / Android 17 at 15:41:14 UTC. Archived the report and retraced it with that exact release's R8 mapping.
+- The decoded stack runs from a dialog's IntrinsicWidthNode through ColumnMeasurePolicy.maxIntrinsicWidth, nested column/row maxIntrinsicHeight queries, and LazyLayoutBeyondBoundsProviderModifierNode into SubcomposeLayout's unsupported intrinsic measurement. The nested row matches the custom-zap dialog's ZapSplitRow; the report does not identify the tapped control. The hashtag and repost AlertDialogs also contain unguarded lazy lists.
+- Replaced these three AlertDialog hosts with a shared BasicAlertDialog surface that measures children normally. Inspected the locally cached Material 3 1.4.0 BasicAlertDialog implementation: its default override uses sizeIn and Box measurement, without an intrinsic sizing modifier. Retained bounded lazy lists, Material colors/typography, dismissal and click actions; added scrolling for the custom-zap fields with the confirmation action outside the scrollable body.
+- Reviewed all remaining AlertDialog call sites; they use text/forms without lazy descendants. Payment signing, amount validation, split allocation and sending are unchanged. `git diff --check` passed.
+- No build, tests, emulator or publication performed. Device checks after release: custom zap amount/message on a split note; non-split custom zap; split-recipient navigation; long repost and matching-hashtag lists; dismissal; large font and keyboard with the confirmation action reachable.
+
+
+## Inline custom emoji source review — 2026-11-18
+
+- Confirmed the supplied kind-1 event `0000484d69dee8cae6e3d68732ff6823d94d382634b4b4b8cfc928f71f217b5d` carries the `PepeHands` emoji tag with its BetterTTV WebP URL. Its text is “Love you Nostr, onwards :PepeHands:” followed by a video link.
+- Added bounded, background tag/shortcode parsing to the shared note, reply and quoted-note render paths. Inline alternate text retains the complete shortcode and original text offsets; link annotations and monospace spans are excluded. Invalid/missing tags remain text. Image failures restore text, with a fresh opportunity on foreground re-entry. Existing image caching, decoding and animation visibility rules are reused.
+- Reviewed collapsed text with repeated emoji, truncation inside a shortcode, surrogate pairs, existing expand controls, links, and text replacement during asynchronous parsing. Measurement uses the same placeholders as rendering; truncation backs up to the start of an emoji. No new subscriptions, settings or external PR changes.
+- Source whitespace checks passed. No automated tests or emulator run. Live device checks remain for the release: the supplied note in feed/thread/quote, selection/copy/quote-reply, animated emoji, collapsed/expanded text, failed-image fallback, and the separately prepared dialog-crash fix.

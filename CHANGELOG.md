@@ -4,6 +4,14 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-11-18
+
+### Added
+- Render tagged custom emoji such as `:PepeHands:` inline in notes, replies and quoted notes. Preserve shortcodes when copying or when images cannot load.
+
+### Fixed
+- Avoid a dialog layout crash when choosing a custom zap amount or message on a note with zap splits, or opening repost and matching-hashtag lists.
+
 ## [1.16.1] - 2026-11-16
 
 ### Fixed

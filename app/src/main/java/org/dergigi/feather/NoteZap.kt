@@ -3,6 +3,8 @@ package org.dergigi.feather
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -109,9 +111,9 @@ internal fun NoteZap(note: Event, counts: Engagement, publicKey: String?,
     }
     if (custom && enabled) {
         val amount = input.toLongOrNull()?.takeIf { it in 1..MAX_ZAP_SATS }
-        AlertDialog(onDismissRequest = { custom = false },
+        ListContentDialog(onDismissRequest = { custom = false },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ZapSplitRow(note) { key -> custom = false; openSplitProfile(key) }
                 OutlinedTextField(value = input, onValueChange = { value ->
                     if (value.length <= 16 && value.all { it in '0'..'9' }) input = value

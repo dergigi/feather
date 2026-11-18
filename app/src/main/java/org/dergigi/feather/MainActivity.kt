@@ -1207,7 +1207,7 @@ private fun MatchedHashtagBadge(note: Event, followed: Set<String>, onReference:
         if (matches.size > 1) Text("+${matches.size - 1}", style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary, maxLines = 1)
     }
-    if (expanded) AlertDialog(onDismissRequest = { expanded = false },
+    if (expanded) ListContentDialog(onDismissRequest = { expanded = false },
         title = { Text(stringResource(R.string.ui_matching_followed_hashtags)) },
         text = {
             LazyColumn(Modifier.heightIn(max = 360.dp)) {
@@ -1216,7 +1216,7 @@ private fun MatchedHashtagBadge(note: Event, followed: Set<String>, onReference:
                         color = MaterialTheme.colorScheme.primary)
                 }
             }
-        }, confirmButton = {})
+        })
 }
 
 @Composable
@@ -1235,7 +1235,7 @@ private fun RepostAttribution(reposts: List<Event>, state: FeedState, onProfile:
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-    if (showPeople) AlertDialog(onDismissRequest = { showPeople = false },
+    if (showPeople) ListContentDialog(onDismissRequest = { showPeople = false },
         title = { Text(stringResource(R.string.ui_repost)) },
         text = {
             androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 400.dp)) {
@@ -1250,7 +1250,7 @@ private fun RepostAttribution(reposts: List<Event>, state: FeedState, onProfile:
                     }
                 }
             }
-        }, confirmButton = {})
+        })
 }
 
 @Composable
@@ -1382,9 +1382,10 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
             if (content.isNotBlank()) NoteSelection(note) {
                 val style = MaterialTheme.typography.bodyLarge.copy(fontSize = if (threadRow?.focused == true) 20.sp else 16.sp,
                     lineHeight = if (threadRow?.focused == true) 28.sp else 24.sp)
-                if (compact) InlineExpandableText(content, 12, expanded, { expanded = !expanded }, style,
-                    stringResource(R.string.ui_expand_note), stringResource(R.string.ui_collapse_note))
-                else LinkText(content, style = style)
+                val emoji = noteEmojiContent(content, note)
+                if (compact) InlineExpandableText(emoji.text, 12, expanded, { expanded = !expanded }, style,
+                    stringResource(R.string.ui_expand_note), stringResource(R.string.ui_collapse_note), inlineContent = emoji.inlineContent)
+                else LinkText(emoji.text, style = style, inlineContent = emoji.inlineContent)
             }
         }
         val orderedContent = remember(note.id, attachments, quotes) {
@@ -1706,7 +1707,9 @@ internal fun EmbeddedNote(reference: NostrContent.Reference, note: Event?, profi
                 LinkPreviewContent(body, limit = 1, event = note) { part ->
                     val text = richNoteText(part, note, profiles, onReference)
                     if (text.isNotBlank()) NoteSelection(note) {
-                        LinkText(text, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 23.sp), maxLines = if (compact) 8 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
+                        val emoji = noteEmojiContent(text, note)
+                        LinkText(emoji.text, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 23.sp), maxLines = if (compact) 8 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis,
+                            inlineContent = emoji.inlineContent)
                     }
                 }
                 // One level only. Deeper references remain links, avoiding recursive network/render work.

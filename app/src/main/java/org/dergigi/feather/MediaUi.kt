@@ -94,7 +94,7 @@ fun MediaHost(store: MediaStore, reading: Boolean, content: @Composable () -> Un
 }
 
 @Composable
-fun RemoteImage(url: String?, modifier: Modifier, description: String? = null, crop: Boolean = true, avatar: Boolean = false, widthPx: Int? = null, fillWidth: Boolean = false, onImageSize: ((Int, Int) -> Unit)? = null) {
+fun RemoteImage(url: String?, modifier: Modifier, description: String? = null, crop: Boolean = true, avatar: Boolean = false, widthPx: Int? = null, fillWidth: Boolean = false, onFailure: (() -> Unit)? = null, onImageSize: ((Int, Int) -> Unit)? = null) {
     val media = LocalMedia.current
     val context = LocalContext.current
     val safeUrl = remember(url) { MediaContent.mediaUrl(url) }
@@ -130,7 +130,7 @@ fun RemoteImage(url: String?, modifier: Modifier, description: String? = null, c
                 val bounds = it.boundsInWindow()
                 visible = bounds.bottom > 0 && bounds.top < view.height && bounds.right > 0 && bounds.left < view.width
             },
-            onError = { failed = true }, onSuccess = {
+            onError = { failed = true; onFailure?.invoke() }, onSuccess = {
                 failed = false
                 decoded = it.result.image
                 onImageSize?.invoke(it.result.image.width, it.result.image.height)
