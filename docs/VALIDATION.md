@@ -2400,3 +2400,14 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Removed standalone mute/unmute from regular/embedded note avatar and name long-press controls; retained Follow, Report, profile-header mute toggles and own-note hold-to-delete. Notification controls and the report sheet's existing mute-after-reporting option are unchanged.
 - New AccountReportDraft instances default to SPAM (localized Spam / scam label). Reopening a draft for the same owner/target preserves its selected reason and text; a new target starts at Spam / scam. Opening/selecting does not sign or publish anything; Send remains explicit.
 - Source diff/whitespace checks passed. Release requested for these changes together with carousel safety, uploaded-image dimensions and reply alignment. No tests or emulators run.
+
+
+## 1.17.1 release — 2026-11-20
+
+- Release/tag source: `5e05225a0512b8ce93ad6bee63158b961b5c386a`; Android versionCode **259**. Includes simpler note moderation controls, Spam / scam defaults, reply alignment, carousel callback safety and dimensions for newly uploaded kind-20 photos. Legacy uploads without saved dimensions remain usable.
+- `./gradlew assembleRelease` passed in **1m 18s**, including release lint and R8. Verified APK signature, version/name and generated BuildConfig source commit. Launcher extraction check passed. Certificate SHA-256: `78fadad16ed2625151be59c4ad9b8ab24a96e9e4e454751f40623fa149c278cd`.
+- Signed APK: **16,482,905 bytes**, SHA-256 `86e8ff959ed891d3f9290299bb92ef908ceda3ba0e5651596610878df6bed2fe`. Archived APK, mapping and SHA256SUMS. GitHub asset digest and downloaded Zapstore CDN APK match.
+- GitHub release: https://github.com/dergigi/feather/releases/tag/v1.17.1 . GitHub and both GRASP release tags point to the source commit; the GitHub mirror needed a direct push using the existing gh credential helper.
+- Zapstore release event: `42fe68292b90b437e2fb8901d7072807d49079ac094ad82a94bdc9bf8b2b3296`; asset event: `6624203906c28f3ed7049f71a47d5da4996f07be9d60e1ad01df9d9ba84e4317`. Verified version, code, size, hash and certificate on the catalog relay, and 1.17.1 on the public app page.
+- Catalog bundle **1851 → 1852** contains the release and asset events. Processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
+- No automated tests or emulators run; device behavior remains for live testing through Zapstore. No external PR merges, website deployment or public issue replies/announcements.
