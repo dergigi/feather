@@ -221,9 +221,14 @@ private val ImageCarouselScroll = object : NestedScrollConnection {
 
 @Composable
 private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attachment>, onOpen: (MediaContent.Attachment) -> Unit) {
+    if (images.isEmpty()) return
+    // Pager count can update before Compose replaces retained key/content callbacks.
+    // All three must read the same snapshot, including during media-type discovery.
+    val latestImages by rememberUpdatedState(images)
+    val latestOnOpen by rememberUpdatedState(onOpen)
     val initialUrl = LocalInitialGallerySelection.current?.takeIf { it.noteId == noteId }?.url
     val initialPage = images.indexOfFirst { it.url == initialUrl }
-    val pager = rememberPagerState(initialPage = initialPage.coerceAtLeast(0), pageCount = { images.size })
+    val pager = rememberPagerState(initialPage = initialPage.coerceAtLeast(0), pageCount = { latestImages.size })
     var initialSelectionApplied by rememberSaveable(noteId, initialUrl) { mutableStateOf(false) }
     val gallerySelection = LocalGallerySelection.current
     val galleryPage = gallerySelection?.takeIf { it.noteId == noteId }
@@ -243,7 +248,8 @@ private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attach
         mutableStateMapOf(*images.map { it.url to (ImageRatios.get(it.url) ?: it.ratio) }.toTypedArray())
     }
     val selected = images[pager.settledPage.coerceIn(images.indices)]
-    val pageDescription = stringResource(R.string.ui_image_page, pager.currentPage + 1, images.size)
+    val currentPage = pager.currentPage.coerceIn(images.indices)
+    val pageDescription = stringResource(R.string.ui_image_page, currentPage + 1, images.size)
     val openLabel = stringResource(R.string.ui_open_image_gallery)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val widthPx = with(LocalDensity.current) { maxWidth.roundToPx() }
@@ -252,12 +258,12 @@ private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attach
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer)) {
-                HorizontalPager(state = pager, key = { images[it].url }, beyondViewportPageCount = 0,
+                HorizontalPager(state = pager, key = { latestImages.getOrNull(it)?.url ?: "pending-image-page:$noteId:$it" }, beyondViewportPageCount = 0,
                     modifier = Modifier.fillMaxSize().nestedScroll(ImageCarouselScroll)
                         .semantics { stateDescription = pageDescription }) { page ->
-                    val attachment = images[page]
+                    val attachment = latestImages.getOrNull(page) ?: return@HorizontalPager
                     RemoteImage(attachment.url,
-                        Modifier.fillMaxSize().clickable(onClickLabel = openLabel) { onOpen(attachment) },
+                        Modifier.fillMaxSize().clickable(onClickLabel = openLabel) { latestOnOpen(attachment) },
                         attachment.alt ?: stringResource(R.string.ui_image_page, page + 1, images.size),
                         crop = false, widthPx = widthPx,
                         onImageSize = { width, imageHeight ->
@@ -267,12 +273,12 @@ private fun InlineImageCarousel(noteId: String, images: List<MediaContent.Attach
             }
             // A bounded moving window keeps even a 32-image post's indicator small.
             val dotCount = minOf(images.size, 7)
-            val firstDot = (pager.currentPage - dotCount / 2).coerceIn(0, images.size - dotCount)
+            val firstDot = (currentPage - dotCount / 2).coerceIn(0, images.size - dotCount)
             Row(Modifier.padding(top = 8.dp).height(12.dp).clearAndSetSemantics {},
                 verticalAlignment = Alignment.CenterVertically) {
                 repeat(dotCount) { index ->
                     val page = firstDot + index
-                    val selectedDot = page == pager.currentPage
+                    val selectedDot = page == currentPage
                     val continuation = (index == 0 && firstDot > 0) || (index == dotCount - 1 && page < images.lastIndex)
                     Box(Modifier.size(12.dp), contentAlignment = Alignment.Center) {
                         Box(Modifier.size(when { selectedDot -> 8.dp; continuation -> 4.dp; else -> 6.dp })

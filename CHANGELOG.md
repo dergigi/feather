@@ -4,6 +4,17 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-11-20
+
+### Changed
+- Simplify note-avatar long-press controls to Follow and Report; keep block/unblock on profiles.
+- Preselect Spam / scam for new account reports, retaining another reason when reopening an existing draft.
+
+### Fixed
+- Align reply icons and counts with neighboring thread rows when a load-more-replies control is shown.
+- Prevent an image-carousel crash when media discovery changes the image list while pager callbacks are still using the previous list.
+- Include processed image dimensions in kind-20 picture-post metadata, preserving them when upload drafts are restored.
+
 ## [1.17.0] - 2026-11-18
 
 ### Added

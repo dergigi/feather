@@ -2377,3 +2377,26 @@ Confirmed the Eurosky getBlob URL shown in the report returns HTTP 200 and image
 - Zapstore release event: `dec257990fb2a49ab8665462b755b54386de752e4967b2995b87c39508b76a74`; asset event: `3cd605c9e88d0610236a4df8911ccde0cebdcd1537d29a2af47a8f732939a323`. Verified version, code, hash and certificate on the catalog relay, and 1.17.0 on the public app page.
 - Catalog bundle **1561 → 1562** contains the release and asset events. Processed Feather icon SHA-256 remains `3391c2a90fbc1e905e8e233a5f99f5d589716efe62f45ad644412bbba768a8ed`.
 - No automated tests or emulators run. The crash trigger remains uncertain: the report identifies the dialog measurement path; the reporter recalled zapping/liking but not the exact control. Device validation remains for live testing through Zapstore. No website deployment or public issue replies/announcements.
+
+
+## Carousel crash and picture metadata review — 2026-11-19 (unreleased)
+
+- Read the new public crash report from Feather 1.17.0 (258), source `5cd661868a10c224411c31e3350c002940b9f3ab`, Pixel 9 Pro XL / Android 17, 07:36:50 UTC. Retraced with the exact release mapping. The first app frame is `InlineImageCarousel` at MediaUi.kt:255, inside the pager key callback; Compose's NearestRangeKeyIndexMap requested index 2 from a captured two-image list.
+- Pager count, key and content callbacks now share rememberUpdatedState(images), following the existing onboarding-pager fix. Keys and content guard stale indices, page descriptions/dots clamp during reconciliation, and the open-gallery callback stays current. Pager state and URL-based gallery selection are retained. Added matching guarded page/content and image-action reads in the full-screen gallery. No new requests or caches.
+- Followed the separate kind-20 report to kind-1111 event `000000a58fca0f273b8ec7dba0e127f75cee98fcbe8da3cac8b5f1641b48bee6`, requesting dim fields in Feather's imeta. Confirmed GIFs already emit dimensions while uploaded images omit them.
+- Read image bounds from the cleaned output file on the existing IO upload dispatcher, without pixel decoding. Persist width/height in upload drafts and emit dim WIDTHxHEIGHT when both are positive. Old drafts default to unknown dimensions and remain usable; existing signed retries remain exact. Dimensions describe rotated/resized upload bytes, not the original camera file.
+- Reviewed list growth/shrink and stale callback access, empty inputs, gallery navigation, dimension capture after cleaning, draft persistence, unknown/invalid dimensions and unchanged GIF metadata. `git diff --check` passed. No build, tests, emulator, publication or public issue reply performed. Device checks remain pending a release request.
+
+
+## Thread reply icon alignment — 2026-11-20 (unreleased)
+
+- Compared the supplied screenshot with the thread action layout. Rows with a continuation control kept 12dp of leading reply padding, whereas ordinary reply rows visually canceled it with a -12dp offset. This shifted the icon and count toward the repost action.
+- Continuation rows now transfer those 12dp to the trailing padding. Total padding and the minimum 56×48dp reply target are preserved; the reply target stays out of the continuation control's 48dp gutter. Full-width roots retain the avatar-axis tail alignment; roots using the continuation gutter follow the same alignment as other inset rows.
+- Reviewed icon-slot/count spacing, unchanged neighboring-action width for ordinary continuation rows, logical start/end padding for RTL, and retained click handlers. `git diff --check` passed. No build, tests, emulator or release requested/performed.
+
+
+## Feed moderation controls — 2026-11-20
+
+- Removed standalone mute/unmute from regular/embedded note avatar and name long-press controls; retained Follow, Report, profile-header mute toggles and own-note hold-to-delete. Notification controls and the report sheet's existing mute-after-reporting option are unchanged.
+- New AccountReportDraft instances default to SPAM (localized Spam / scam label). Reopening a draft for the same owner/target preserves its selected reason and text; a new target starts at Spam / scam. Opening/selecting does not sign or publish anything; Send remains explicit.
+- Source diff/whitespace checks passed. Release requested for these changes together with carousel safety, uploaded-image dimensions and reply alignment. No tests or emulators run.

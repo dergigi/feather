@@ -145,7 +145,9 @@ internal fun GalleryHost(state: FeedState, walletConnected: Boolean, covered: Bo
 // Swipe, double-tap/pinch zoom, background cycling and actions follow Boris.
 @Composable
 private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<String>, state: FeedState, walletConnected: Boolean, sourceNote: (Int) -> Event?, onPage: (Int) -> Unit, onDismiss: () -> Unit, onOpenNote: (Int) -> Unit, onOpenProfile: (String) -> Unit, onLogin: () -> Unit, onWallet: () -> Unit) {
-    val pager = rememberPagerState(initialPage = initialIndex.coerceIn(urls.indices), pageCount = { urls.size })
+    if (urls.isEmpty()) return
+    val latestUrls by rememberUpdatedState(urls)
+    val pager = rememberPagerState(initialPage = initialIndex.coerceIn(urls.indices), pageCount = { latestUrls.size })
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
@@ -271,7 +273,8 @@ private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<St
             }
         }) {
             HorizontalPager(state = pager, userScrollEnabled = !zoomed, modifier = Modifier.fillMaxSize()) { page ->
-                ZoomableGalleryImage(urls[page], page == pager.currentPage,
+                val url = latestUrls.getOrNull(page) ?: return@HorizontalPager
+                ZoomableGalleryImage(url, page == pager.currentPage,
                     onToggleControls = { controlsVisible = !controlsVisible },
                     brightness = { window.attributes.screenBrightness.takeIf { it >= 0f } ?: systemBrightness },
                     onBrightness = { level ->
@@ -299,8 +302,8 @@ private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<St
                 Spacer(Modifier.weight(1f))
                 if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = foreground, strokeWidth = 2.dp)
                 IconButton(onClick = { background = (background + 1) % colors.size }) { Icon(painterResource(R.drawable.contrast), stringResource(R.string.ui_change_gallery_background), tint = foreground) }
-                IconButton(onClick = { download(listOf(urls[pager.currentPage])) }, enabled = !busy) { Icon(painterResource(R.drawable.download), stringResource(R.string.ui_save_image_to_pictures), tint = foreground) }
-                IconButton(onClick = { share(urls[pager.currentPage]) }, enabled = !busy) { Icon(Icons.Outlined.Share, stringResource(R.string.ui_share_image), tint = foreground) }
+                IconButton(onClick = { latestUrls.getOrNull(pager.currentPage)?.let { download(listOf(it)) } }, enabled = !busy) { Icon(painterResource(R.drawable.download), stringResource(R.string.ui_save_image_to_pictures), tint = foreground) }
+                IconButton(onClick = { latestUrls.getOrNull(pager.currentPage)?.let { share(it) } }, enabled = !busy) { Icon(Icons.Outlined.Share, stringResource(R.string.ui_share_image), tint = foreground) }
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.ui_more_image_actions), tint = foreground) }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -313,12 +316,12 @@ private fun ImageGallery(urls: List<String>, initialIndex: Int, noteIds: List<St
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.ui_copy_image_url)) },
                             leadingIcon = { Icon(painterResource(R.drawable.copy), null) },
-                            onClick = { menu = false; clipboard.setText(AnnotatedString(urls[pager.currentPage])) },
+                            onClick = { menu = false; latestUrls.getOrNull(pager.currentPage)?.let { clipboard.setText(AnnotatedString(it)) } },
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.ui_open_image_in_browser)) },
                             leadingIcon = { Icon(painterResource(R.drawable.open_external), null) },
-                            onClick = { menu = false; context.openWebLink(urls[pager.currentPage]) },
+                            onClick = { menu = false; latestUrls.getOrNull(pager.currentPage)?.let { context.openWebLink(it) } },
                         )
                     }
                 }

@@ -19,7 +19,7 @@ internal enum class AccountReportReason(val tag: String, val label: Int, val ico
     OTHER("other", R.string.ui_report_other, R.drawable.report_flag),
 }
 internal data class AccountReportDraft(val owner: String, val target: String,
-    val reason: AccountReportReason? = null, val text: String = "", val muteAfterReporting: Boolean = true)
+    val reason: AccountReportReason? = AccountReportReason.SPAM, val text: String = "", val muteAfterReporting: Boolean = true)
 
 /** Public NIP-56 account reports. Opening/editing never requests a signature. */
 internal class AccountReports(private val context: Context, private val scope: CoroutineScope,

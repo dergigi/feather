@@ -74,8 +74,8 @@ internal fun ModerationAvatar(pubkey: String, name: String, picture: String?, si
                             Icon(painterResource(R.drawable.report_flag), stringResource(R.string.ui_report_account, name),
                                 Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
                         }
-                        val muted = actions?.isMuted?.invoke(pubkey) == true
                         if (profileToggle) {
+                            val muted = actions?.isMuted?.invoke(pubkey) == true
                             val background = if (muted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.errorContainer
                             val foreground = if (muted) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onErrorContainer
                             IconToggleButton(checked = muted, enabled = actions?.mutePending?.invoke(pubkey) != true,
@@ -90,15 +90,6 @@ internal fun ModerationAvatar(pubkey: String, name: String, picture: String?, si
                                     stringResource(if (muted) R.string.ui_unmute_account else R.string.ui_mute_account, name),
                                     Modifier.size(22.dp))
                             }
-                        } else if (muted) {
-                            HoldToUnmuteButton(pubkey, name, size = size) {
-                                actions?.expanded = null
-                                actions?.unmute?.invoke(pubkey)
-                            }
-                        } else IconButton(onClick = { actions?.expanded = null; actions?.mute?.invoke(pubkey) },
-                            modifier = Modifier.size(size.dp).background(MaterialTheme.colorScheme.errorContainer, CircleShape)) {
-                            Icon(painterResource(R.drawable.account_hidden), stringResource(R.string.ui_mute_account, name),
-                                Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
                         }
 
                     }

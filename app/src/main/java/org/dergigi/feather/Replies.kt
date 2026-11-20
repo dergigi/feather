@@ -89,7 +89,8 @@ internal class ReplyStore(context: Context) {
             (0 until minOf(array.length(), 32)).mapNotNull { index ->
                 runCatching {
                     val item = array.getJSONObject(index)
-                    UploadedAttachment(item.getString("url"), item.getLong("originalSize"), item.getLong("size"), item.optBoolean("compressed", false), item.optString("mime"), item.optString("hash"))
+                    UploadedAttachment(item.getString("url"), item.getLong("originalSize"), item.getLong("size"), item.optBoolean("compressed", false), item.optString("mime"), item.optString("hash"),
+                        item.optInt("width").coerceAtLeast(0), item.optInt("height").coerceAtLeast(0))
                         .takeIf { it.url.length <= 2048 && it.originalSize in 1..250L * 1024 * 1024 && it.size in 1..250L * 1024 * 1024 }
                 }.getOrNull()
             }
@@ -111,6 +112,7 @@ internal class ReplyStore(context: Context) {
         if (sizes.isEmpty()) uploadEdit.remove(key)
         else uploadEdit.putString(key, JSONArray(sizes.map {
             JSONObject().put("url", it.url).put("originalSize", it.originalSize).put("size", it.size).put("compressed", it.compressed).put("mime", it.mime).put("hash", it.hash)
+                .put("width", it.width).put("height", it.height)
         }).toString())
         uploads.all.keys.filter { it != key }.drop(15).forEach(uploadEdit::remove)
         check(uploadEdit.commit()) { "Could not save attachment sizes" }

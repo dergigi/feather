@@ -1424,14 +1424,17 @@ private fun NoteRow(note: Event, state: FeedState, onReference: (NostrContent.Re
             val reply = LocalReply.current
             val more = threadRow?.more == true
             val leftActions: @Composable () -> Unit = {
-            // Keep a little breathing room inside the text edge, independent of reply counts.
-            // A continuation control owns the gutter beside this row; keep their tap areas separate.
+            // Continuations own the gutter: move the reply's leading padding to its trailing
+            // edge so its glyph stays aligned without moving its tap target into that gutter.
+            val replyStartPadding = if (more) 0.dp else 12.dp
+            val anchorToAvatar = rootReply && !more
             // conversation.xml's tail is (2, 22) in a 24-unit viewport. Pin it to the avatar axis
-            // (18dp inside the content edge); counts occupy space only after the fixed icon slot.
-            val replyOffset = if (rootReply) 18.dp - 12.dp - (24.dp - replyIconSize) / 2 - replyIconSize * (2f / 24f)
+            // for full-width roots; counts occupy space only after the fixed icon slot.
+            val replyOffset = if (anchorToAvatar) 18.dp - 12.dp - (24.dp - replyIconSize) / 2 - replyIconSize * (2f / 24f)
                 else if (more) 0.dp else (-12).dp
-            Row((if (rootReply) Modifier.padding(start = replyOffset) else Modifier.offset(x = replyOffset))
-                .widthIn(min = 56.dp).heightIn(min = 48.dp).clip(CircleShape).clickable(onClickLabel = "Reply to note", onClick = { reply(note) }).padding(horizontal = 12.dp),
+            Row((if (anchorToAvatar) Modifier.padding(start = replyOffset) else Modifier.offset(x = replyOffset))
+                .widthIn(min = 56.dp).heightIn(min = 48.dp).clip(CircleShape).clickable(onClickLabel = "Reply to note", onClick = { reply(note) })
+                .padding(start = replyStartPadding, end = 24.dp - replyStartPadding),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start)) {
                 Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
                     Icon(painterResource(R.drawable.conversation), "Reply; ${counts.replies} replies", Modifier.size(replyIconSize), tint = MaterialTheme.colorScheme.onSurfaceVariant)

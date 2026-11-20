@@ -29,7 +29,8 @@ internal fun blossomServer(raw: String): String? = raw.toHttpUrlOrNull()?.takeIf
 }?.toString()?.trimEnd('/')
 
 internal data class ImageUploadProgress(val size: Long? = null, val percent: Int? = null, val stage: String = "Opening attachment", val originalSize: Long? = null)
-internal data class UploadedAttachment(val url: String, val originalSize: Long, val size: Long, val compressed: Boolean = false, val mime: String = "", val hash: String = "")
+internal data class UploadedAttachment(val url: String, val originalSize: Long, val size: Long, val compressed: Boolean = false,
+    val mime: String = "", val hash: String = "", val width: Int = 0, val height: Int = 0)
 
 /** One bounded attachment at a time; only explicitly selected account servers receive bytes. */
 internal class BlossomUpload(private val context: Context) {
@@ -102,6 +103,13 @@ internal class BlossomUpload(private val context: Context) {
             }
                 else ImagePrivacy.Result(VideoPrivacy.clean(original, file)) // Rejects files without a real video track.
             val mime = prepared.mime
+            // Describe the exact uploaded bytes after rotation/resizing, without decoding pixels.
+            val uploadedBounds = if (image) BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+                BitmapFactory.decodeFile(file.absolutePath, this)
+            } else null
+            val width = uploadedBounds?.outWidth?.coerceAtLeast(0) ?: 0
+            val height = uploadedBounds?.outHeight?.coerceAtLeast(0) ?: 0
             original.delete()
             currentCoroutineContext().ensureActive()
             size = file.length()
@@ -150,7 +158,7 @@ internal class BlossomUpload(private val context: Context) {
                     continue
                 }
                 progress("Uploaded", 100)
-                if (first == null) { first = url; onUploaded(UploadedAttachment(url, originalSize, size, prepared.compressed, mime, hash)) }
+                if (first == null) { first = url; onUploaded(UploadedAttachment(url, originalSize, size, prepared.compressed, mime, hash, width, height)) }
             }
             Result(first ?: error("Media upload failed: ${failures.joinToString("; ")}"), failures)
         } finally { original.delete(); file.delete() }

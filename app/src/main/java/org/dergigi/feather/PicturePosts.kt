@@ -12,6 +12,7 @@ internal fun ReplyDraft.pictureTags(): Array<Array<String>> {
         gifs.firstOrNull { it.url == url }?.imeta() ?: uploads.first { it.url == url }.let { image ->
             buildList {
                 add("imeta"); add("url ${image.url}"); add("m ${image.mime}")
+                if (image.width > 0 && image.height > 0) add("dim ${image.width}x${image.height}")
                 if (image.hash.matches(Regex("[0-9a-f]{64}"))) add("x ${image.hash}")
             }.toTypedArray()
         }
